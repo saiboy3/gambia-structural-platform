@@ -1,0 +1,134 @@
+import { useState } from 'react';
+import Card from '../ui/Card';
+import InputField, { SelectField } from '../ui/InputField';
+import Badge from '../ui/Badge';
+import ResultRow from '../ui/ResultRow';
+import ColumnSection from '../visuals/ColumnSection';
+import Column3D from '../visuals/ThreeD/Column3D';
+import CalcSheet from '../ui/CalcSheet';
+import SaveDesignPanel from '../ui/SaveDesignPanel';
+import ProjectSelector from '../projects/ProjectSelector';
+import PMDiagram from '../visuals/PMDiagram';
+import { getMaterial } from '../../utils/materials';
+import { designColumn } from '../../utils/columnCalculations';
+import { columnCalcNotes } from '../../utils/calcNotes';
+import { useBuildingCode } from '../../context/BuildingCodeContext';
+import type { ColumnInputs, ColumnResults, ConcreteGrade, RebarGrade } from '../../types/structural';
+
+const defaultInputs: ColumnInputs = {
+  shape: 'rectangular', b: 300, h: 400, cover: 35, height: 3.5,
+  Ned: 800, Medy: 50, Medx: 30,
+  material: getMaterial('C25/30', 'B500B'),
+  braced: true,
+};
+
+export default function ColumnDesign() {
+  const [inp, setInp] = useState<ColumnInputs>(defaultInputs);
+  const [res, setRes] = useState<ColumnResults | null>(null);
+  const [show3D, setShow3D] = useState(false);
+  const { factors } = useBuildingCode();
+
+  const set = (key: keyof ColumnInputs, val: string | number | boolean) =>
+    setInp(prev => ({ ...prev, [key]: val }));
+
+  const setMat = (concrete: ConcreteGrade, rebar: RebarGrade) =>
+    setInp(prev => ({ ...prev, material: getMaterial(concrete, rebar) }));
+
+  return (
+    <div className="space-y-3">
+    <div className="flex items-center gap-2 flex-wrap">
+      <span className="text-xs text-slate-500">Project:</span>
+      <ProjectSelector />
+    </div>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <Card title="Column Parameters" className="lg:col-span-1">
+        <div className="grid grid-cols-2 gap-3">
+          <SelectField label="Shape" value={inp.shape}
+            onChange={v => set('shape', v)}
+            options={[
+              { value: 'rectangular', label: 'Rectangular' },
+              { value: 'square', label: 'Square' },
+              { value: 'circular', label: 'Circular' },
+            ]} />
+          <InputField label="Width / Dia (b)" unit="mm" value={inp.b} onChange={v => set('b', +v)} min={200} />
+          <InputField label="Depth (h)" unit="mm" value={inp.h} onChange={v => set('h', +v)} min={200} />
+          <InputField label="Cover" unit="mm" value={inp.cover} onChange={v => set('cover', +v)} min={25} />
+          <InputField label="Clear Height" unit="m" value={inp.height} onChange={v => set('height', +v)} min={1} />
+          <InputField label="NEd (axial)" unit="kN" value={inp.Ned} onChange={v => set('Ned', +v)} min={0} />
+          <InputField label="MEdy" unit="kNm" value={inp.Medy} onChange={v => set('Medy', +v)} min={0} />
+          <InputField label="MEdx" unit="kNm" value={inp.Medx} onChange={v => set('Medx', +v)} min={0} />
+          <SelectField label="Concrete" value={inp.material.concrete}
+            onChange={v => setMat(v as ConcreteGrade, inp.material.rebar)}
+            options={['C20/25','C25/30','C30/37','C35/45','C40/50'].map(c => ({ value: c, label: c }))} />
+          <SelectField label="Rebar" value={inp.material.rebar}
+            onChange={v => setMat(inp.material.concrete, v as RebarGrade)}
+            options={['B500B','B500C','B250'].map(r => ({ value: r, label: r }))} />
+          <SelectField label="Frame Type" value={inp.braced ? 'braced' : 'unbraced'}
+            onChange={v => set('braced', v === 'braced')}
+            options={[{ value: 'braced', label: 'Braced' }, { value: 'unbraced', label: 'Unbraced' }]} />
+        </div>
+        <button onClick={() => setRes(designColumn(inp, factors))}
+          className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors">
+          Design Column
+        </button>
+      </Card>
+
+      <Card title="Design Results" className="lg:col-span-1">
+        {res ? (
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 mb-3">
+              <Badge status={res.status} />
+            </div>
+            <ResultRow label="Slenderness λy" value={res.slendernessY} highlight />
+            <ResultRow label="Slenderness λx" value={res.slendernessX} highlight />
+            <ResultRow label="Slender?" value={res.isSlender ? 'Yes' : 'No'} />
+            <p className="text-xs font-semibold text-slate-500 mt-3 mb-1">Reinforcement</p>
+            <ResultRow label="As required" value={res.AsReq} unit="mm²" />
+            <ResultRow label="As min" value={res.minAs.toFixed(0)} unit="mm²" />
+            <ResultRow label="As max" value={res.maxAs.toFixed(0)} unit="mm²" />
+            <ResultRow label="Main bars" value={`${res.mainBars.count}T${res.mainBars.dia}`} />
+            <ResultRow label="As provided" value={res.mainBars.As.toFixed(0)} unit="mm²" />
+            <ResultRow label="Links" value={`T${res.links.dia}@${res.links.spacing}`} />
+            <p className="text-xs font-semibold text-slate-500 mt-3 mb-1">Capacity</p>
+            <ResultRow label="Axial Capacity" value={res.capacity} unit="kN" highlight />
+            <ResultRow label="Utilisation" value={`${((inp.Ned / res.capacity) * 100).toFixed(1)}%`} />
+            <div className="mt-3 p-2 bg-slate-50 rounded-lg">
+              {res.messages.map((m, i) => (
+                <p key={i} className={`text-xs ${m.startsWith('FAIL') ? 'text-red-600' : m.startsWith('WARN') ? 'text-amber-600' : 'text-emerald-600'}`}>{m}</p>
+              ))}
+            </div>
+            <CalcSheet
+              title="Column Calculation Sheet"
+              codeLabel={factors.label}
+              steps={columnCalcNotes(inp, res, factors)}
+            />
+            <SaveDesignPanel memberType="column"
+              inputs={inp as unknown as Record<string, unknown>}
+              results={res as unknown as Record<string, unknown>} />
+          </div>
+        ) : (
+          <p className="text-sm text-slate-400 text-center py-8">Enter parameters and click Design Column</p>
+        )}
+      </Card>
+
+      <Card title="Cross-Section Visual" className="lg:col-span-1" actions={res ? (
+        <button onClick={() => setShow3D(p => !p)}
+          className="text-xs px-2.5 py-1 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-600">
+          {show3D ? '2D View' : '3D View'}
+        </button>
+      ) : undefined}>
+        {res ? (
+          <>
+            {show3D ? <Column3D inputs={inp} results={res} /> : <ColumnSection inputs={inp} results={res} />}
+            <div className="mt-4 border-t border-slate-100 pt-4">
+              <PMDiagram inputs={inp} factors={factors} />
+            </div>
+          </>
+        ) : (
+          <p className="text-sm text-slate-400 text-center py-8">Design output will appear here</p>
+        )}
+      </Card>
+    </div>
+    </div>
+  );
+}
