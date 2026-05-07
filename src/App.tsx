@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Layers, Columns3, Square, Hammer, FileText, Menu, X,
   ChevronRight, Calculator, ChevronDown, Zap, AlertTriangle, Footprints,
   BookOpen, Ruler, FolderOpen, ClipboardCheck, FlaskConical,
-  DollarSign, Users, ImageIcon, LogOut,
+  DollarSign, Users, ImageIcon, LogOut, Milestone, Waves, Bridge,
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import BeamDesign from './components/analysis/BeamDesign';
@@ -120,6 +120,12 @@ const NAV_GROUPS: NavGroup[] = [
     { id: 'composite-beam', label: 'Composite Beam', icon: Layers },
     { id: 'steel-connection', label: 'Steel Connections', icon: Layers },
   ]},
+  { label: 'Transportation', items: [
+    { id: 'pavement', label: 'Road Pavement', icon: Milestone },
+    { id: 'culvert', label: 'Box Culvert', icon: Waves },
+    { id: 'bridge-beam', label: 'Bridge Beam', icon: Bridge },
+    { id: 'bridge-abutment', label: 'Bridge Abutment', icon: Hammer },
+  ]},
   { label: 'Projects & QA', items: [
     { id: 'projects', label: 'Project Register', icon: FolderOpen },
     { id: 'cube-tests', label: 'Cube Test Log', icon: FlaskConical },
@@ -131,12 +137,6 @@ const NAV_GROUPS: NavGroup[] = [
     { id: 'code-reference', label: 'Code Reference', icon: BookOpen },
     { id: 'worked-examples', label: 'Worked Examples', icon: FileText },
     { id: 'unit-converter', label: 'Unit Converter', icon: Ruler },
-  ]},
-  { label: 'Transportation', items: [
-    { id: 'pavement', label: 'Road Pavement', icon: Layers },
-    { id: 'culvert', label: 'Box Culvert', icon: Square },
-    { id: 'bridge-beam', label: 'Bridge Beam', icon: Layers },
-    { id: 'bridge-abutment', label: 'Bridge Abutment', icon: Hammer },
   ]},
   { label: 'Business', items: [
     { id: 'boq', label: 'Bill of Quantities', icon: FileText },
