@@ -85,8 +85,10 @@ export default function PileCapDesign() {
     setInp(p => ({ ...p, material: getMaterial(c as ConcreteGrade, r as RebarGrade) }));
 
   const checks: UtilCheck[] = res ? [
-    { label: 'Punching at column', demand: res.vEd_col, capacity: res.vRdc, unit: 'MPa', note: 'vEd / vRd,c' },
-    { label: 'Flexural steel', demand: res.As_req, capacity: res.bars.As, unit: 'mm²/m', note: 'As,req / As,prov', invert: true },
+    { label: 'Punching at column', demand: res.vEd_col, capacity: res.vRdc, unit: 'MPa', note: 'vEd / vRd,c',
+      hint: 'Increase cap depth or enlarge the column. A deeper cap significantly raises punching resistance.' },
+    { label: 'Flexural steel', demand: res.As_req, capacity: res.bars.As, unit: 'mm²/m', note: 'As,req / As,prov', invert: true,
+      hint: 'Use a smaller bar spacing or a larger bar diameter to provide the required area per metre.' },
   ] : [];
 
   return (

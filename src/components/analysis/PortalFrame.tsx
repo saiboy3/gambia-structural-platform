@@ -233,9 +233,12 @@ export default function PortalFrame() {
   const set = (k: keyof PortalFrameInputs, v: unknown) => setInp(p => ({ ...p, [k]: v }));
 
   const checks: UtilCheck[] = res ? [
-    { label: 'Rafter bending (LTB)', demand: res.Med_rafter, capacity: res.McRd_rafter, unit: 'kNm', note: `χLT × Mpl,Rd` },
-    { label: 'Column interaction', demand: res.util_col, capacity: 1.0, unit: '', note: 'M/McRd + N/NcRd' },
-    { label: 'Sway stability', demand: res.swayRatio, capacity: 1.0, unit: '', note: 'δ / (h/250)' },
+    { label: 'Rafter bending (LTB)', demand: res.Med_rafter, capacity: res.McRd_rafter, unit: 'kNm', note: `χLT × Mpl,Rd`,
+      hint: 'Lateral-torsional buckling governs. Add intermediate purlins as restraints, or upsize the rafter section.' },
+    { label: 'Column interaction', demand: res.util_col, capacity: 1.0, unit: '', note: 'M/McRd + N/NcRd',
+      hint: 'Combined bending and axial load exceeds capacity. Upsize the column section or add a haunch at the eaves.' },
+    { label: 'Sway stability', demand: res.swayRatio, capacity: 1.0, unit: '', note: 'δ / (h/250)',
+      hint: 'Frame sways excessively under lateral load. Add diagonal bracing, use fixed bases, or increase column stiffness.' },
   ] : [];
 
   const sections = PORTAL_SECTIONS.map(s => ({ value: s.name, label: s.name }));

@@ -27,10 +27,14 @@ const defaultInputs: ColumnInputs = {
 
 function buildColChecks(inp: ColumnInputs, res: ColumnResults): UtilCheck[] {
   return [
-    { label: 'Axial capacity', demand: inp.Ned, capacity: res.capacity, unit: 'kN', note: 'NEd / NRd' },
-    { label: 'As provided', demand: res.mainBars.As, capacity: res.AsReq, unit: 'mm²', note: 'As,prov / As,req', invert: true },
-    { label: 'Min steel', demand: res.mainBars.As, capacity: res.minAs, unit: 'mm²', note: 'As,prov / As,min', invert: true },
-    { label: 'Max steel', demand: res.mainBars.As, capacity: res.maxAs, unit: 'mm²', note: 'As,prov / As,max' },
+    { label: 'Axial capacity', demand: inp.Ned, capacity: res.capacity, unit: 'kN', note: 'NEd / NRd',
+      hint: 'Column cannot carry the axial load. Increase section size, add bars, or use higher-grade concrete.' },
+    { label: 'As provided', demand: res.mainBars.As, capacity: res.AsReq, unit: 'mm²', note: 'As,prov / As,req', invert: true,
+      hint: 'Required area not met. Select a larger bar diameter or increase the number of bars.' },
+    { label: 'Min steel (0.2% Ac)', demand: res.mainBars.As, capacity: res.minAs, unit: 'mm²', note: 'As,prov / As,min', invert: true,
+      hint: 'Code minimum ensures ductility. Provide at least 4 bars regardless of load.' },
+    { label: 'Max steel (4% Ac)', demand: res.mainBars.As, capacity: res.maxAs, unit: 'mm²', note: 'As,prov / As,max',
+      hint: 'Over-reinforcing causes congestion and poor concrete compaction. Increase section size instead.' },
   ];
 }
 

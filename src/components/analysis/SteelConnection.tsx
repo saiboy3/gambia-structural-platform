@@ -121,11 +121,16 @@ export default function SteelConnection() {
     setInp(p => ({ ...p, bolt: { ...p.bolt, [k]: v } }));
 
   const checks: UtilCheck[] = res ? [
-    { label: 'Bolt shear', demand: res.util_bolt_shear, capacity: 1.0, note: 'FvEd / FvRd' },
-    { label: 'Bolt tension', demand: res.util_bolt_tension, capacity: 1.0, note: 'FtEd / FtRd' },
-    { label: 'Plate shear', demand: res.util_plate_shear, capacity: 1.0, note: 'VEd / Vpl,Rd' },
-    { label: 'Block shear', demand: res.util_block, capacity: 1.0, note: 'VEd / VbsRd' },
-    ...(inp.type === 'base-plate' ? [{ label: 'Bearing on grout', demand: res.bearing_stress, capacity: res.bearing_limit, unit: 'MPa', note: 'σ / 0.67fck' }] : []),
+    { label: 'Bolt shear', demand: res.util_bolt_shear, capacity: 1.0, note: 'FvEd / FvRd',
+      hint: 'Use a larger bolt diameter (M20→M24) or increase the bolt count in the group.' },
+    { label: 'Bolt tension', demand: res.util_bolt_tension, capacity: 1.0, note: 'FtEd / FtRd',
+      hint: 'Increase bolt grade (8.8→10.9) or add more bolt rows to reduce tension per bolt.' },
+    { label: 'Plate shear', demand: res.util_plate_shear, capacity: 1.0, note: 'VEd / Vpl,Rd',
+      hint: 'Increase plate thickness or use a wider plate to raise the shear area.' },
+    { label: 'Block shear', demand: res.util_block, capacity: 1.0, note: 'VEd / VbsRd',
+      hint: 'Increase bolt gauge (horizontal spacing) or add bolt rows to enlarge the shear-out path.' },
+    ...(inp.type === 'base-plate' ? [{ label: 'Bearing on grout', demand: res.bearing_stress, capacity: res.bearing_limit, unit: 'MPa', note: 'σ / 0.67fck',
+      hint: 'Stress under base plate exceeds grout capacity. Increase plate dimensions or use higher-strength grout.' }] : []),
   ] : [];
 
   const needsMoment = inp.type === 'end-plate';

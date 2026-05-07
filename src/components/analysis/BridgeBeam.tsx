@@ -78,9 +78,12 @@ export default function BridgeBeam() {
   const set = (k: keyof BridgeBeamInputs, v: unknown) => setInp(p => ({ ...p, [k]: v }));
 
   const checks: UtilCheck[] = res ? [
-    { label: 'Bending', demand: res.Med, capacity: res.MRd, unit: 'kNm', note: 'MEd / MRd' },
-    { label: 'Shear', demand: res.Ved, capacity: res.VRdc, unit: 'kN', note: 'VEd / VRd,c' },
-    { label: 'Deflection', demand: res.delta, capacity: res.deltaLimit, unit: 'mm', note: 'δ / (L/400)' },
+    { label: 'Bending', demand: res.Med, capacity: res.MRd, unit: 'kNm', note: 'MEd / MRd',
+      hint: 'Increase beam depth or add main tension bars. For T-beams, check that the flange is in compression.' },
+    { label: 'Shear', demand: res.Ved, capacity: res.VRdc, unit: 'kN', note: 'VEd / VRd,c',
+      hint: 'Concrete shear capacity is low — add shear links (stirrups) or increase web width.' },
+    { label: 'Deflection (L/400)', demand: res.delta, capacity: res.deltaLimit, unit: 'mm', note: 'δ / (L/400)',
+      hint: 'Bridge beams are stiff by deflection. Increase effective depth or reduce beam spacing.' },
   ] : [];
 
   return (

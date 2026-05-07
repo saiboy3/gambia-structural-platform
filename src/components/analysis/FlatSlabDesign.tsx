@@ -127,10 +127,14 @@ export default function FlatSlabDesign() {
     setInp(p => ({ ...p, material: getMaterial(c as ConcreteGrade, r as RebarGrade) }));
 
   const checks: UtilCheck[] = res ? [
-    { label: 'Punching shear', demand: res.vEd, capacity: res.vRdc, unit: 'MPa', note: 'vEd / vRd,c' },
-    { label: 'Col. strip hogging', demand: res.As_cs_top, capacity: res.bars_cs_top.As, unit: 'mm²/m', note: 'As,req / As,prov', invert: true },
-    { label: 'Col. strip sagging', demand: res.As_cs_bot, capacity: res.bars_cs_bot.As, unit: 'mm²/m', note: 'As,req / As,prov', invert: true },
-    { label: 'Span / depth', demand: res.spanRatio, capacity: inp.interiorCol ? 31 : 28, note: 'actual / limit' },
+    { label: 'Punching shear', demand: res.vEd, capacity: res.vRdc, unit: 'MPa', note: 'vEd / vRd,c',
+      hint: 'Critical failure mode for flat slabs. Increase slab depth, add shear studs, or enlarge the column.' },
+    { label: 'Col. strip — top steel', demand: res.As_cs_top, capacity: res.bars_cs_top.As, unit: 'mm²/m', note: 'As,req / As,prov', invert: true,
+      hint: 'Top bars resist hogging over columns. Tighten bar spacing or use a larger diameter.' },
+    { label: 'Col. strip — bottom steel', demand: res.As_cs_bot, capacity: res.bars_cs_bot.As, unit: 'mm²/m', note: 'As,req / As,prov', invert: true,
+      hint: 'Bottom bars resist mid-span sagging. Tighten bar spacing or use a larger diameter.' },
+    { label: 'Span / depth ratio', demand: res.spanRatio, capacity: inp.interiorCol ? 31 : 28, note: 'actual / limit',
+      hint: 'Slab is too shallow relative to span. Increase thickness — flat slabs are typically span/30 to span/35.' },
   ] : [];
 
   return (

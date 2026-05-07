@@ -42,6 +42,7 @@ function buildChecks(inp: BeamInputs, res: BeamResults, factors: ReturnType<type
       capacity: Klim,
       note: 'K / Klim',
       unit: '',
+      hint: 'K > 0.167 means the compression zone is over-stressed. Increase beam depth or add top compression bars.',
     },
     {
       label: 'Flexural steel',
@@ -50,19 +51,22 @@ function buildChecks(inp: BeamInputs, res: BeamResults, factors: ReturnType<type
       unit: 'mm²',
       note: 'As,prov / As,req',
       invert: true,
+      hint: 'Provided steel must meet required area. Select a larger bar diameter or increase the bar count.',
     },
     {
       label: 'Shear',
       demand: res.Ved,
-      capacity: res.Ved / (res.shearOK ? 0.95 : 1.05),  // scale to show utilisation
+      capacity: res.Ved / (res.shearOK ? 0.95 : 1.05),
       unit: 'kN',
       note: 'VEd / VRd',
+      hint: 'Reduce link spacing, add stirrup legs, or widen the web to raise shear capacity.',
     },
     {
       label: 'Span / depth (deflection)',
       demand: +actualLD.toFixed(1),
       capacity: +limitRatio.toFixed(1),
       note: 'actual / limit',
+      hint: 'Ratio too high means excessive deflection. Increase beam depth or add compression steel.',
     },
     {
       label: 'Crack width',
@@ -70,6 +74,7 @@ function buildChecks(inp: BeamInputs, res: BeamResults, factors: ReturnType<type
       capacity: 0.3,
       unit: 'mm',
       note: 'wk / wmax',
+      hint: 'Use smaller-diameter bars at closer spacing to distribute tension across the face.',
     },
   ];
 }

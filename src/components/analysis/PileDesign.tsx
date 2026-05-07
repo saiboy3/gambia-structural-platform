@@ -95,8 +95,10 @@ export default function PileDesign() {
   const removeLayer = (i: number) => setInp(p => ({ ...p, layers: p.layers.filter((_, idx) => idx !== i) }));
 
   const checks: UtilCheck[] = res ? [
-    { label: 'Shaft friction', demand: res.Qs, capacity: res.Qu, unit: 'kN', note: 'Qs/Qu ratio' },
-    { label: 'End bearing', demand: res.Qb, capacity: res.Qu, unit: 'kN', note: 'Qb/Qu ratio' },
+    { label: 'Shaft friction', demand: res.Qs, capacity: res.Qu, unit: 'kN', note: 'Qs/Qu ratio',
+      hint: 'Friction is the dominant component. Increase pile length to mobilise more skin resistance through the soil profile.' },
+    { label: 'End bearing', demand: res.Qb, capacity: res.Qu, unit: 'kN', note: 'Qb/Qu ratio',
+      hint: 'Bearing is the dominant component. Ensure the pile tip is seated in a competent stratum, or increase diameter.' },
   ] : [];
 
   const isClay = (t: string) => t.includes('clay');

@@ -129,8 +129,10 @@ export default function CulvertDesign() {
   const set = (k: keyof CulvertInputs, v: unknown) => setInp(p => ({ ...p, [k]: v }));
 
   const checks: UtilCheck[] = res ? [
-    { label: 'Top slab moment', demand: res.Med_topSlab, capacity: res.Med_topSlab / Math.max(res.As_top / (res.As_top * 1.2), 0.01), unit: 'kNm/m', note: 'MEd / MRd (approx)' },
-    { label: 'Hydraulic capacity', demand: inp.designFlow, capacity: res.flowCapacity, unit: 'm³/s', note: 'Q / Qcap', invert: true },
+    { label: 'Top slab moment', demand: res.Med_topSlab, capacity: res.Med_topSlab / Math.max(res.As_top / (res.As_top * 1.2), 0.01), unit: 'kNm/m', note: 'MEd / MRd (approx)',
+      hint: 'Increase slab thickness or add top tension reinforcement to raise the moment capacity.' },
+    { label: 'Hydraulic capacity', demand: inp.designFlow, capacity: res.flowCapacity, unit: 'm³/s', note: 'Q / Qcap', invert: true,
+      hint: 'Design flow exceeds culvert capacity. Increase the barrel width/height or check inlet conditions.' },
   ] : [];
 
   return (

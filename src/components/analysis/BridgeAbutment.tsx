@@ -252,10 +252,14 @@ export default function BridgeAbutment() {
   const set = (k: keyof AbutmentInputs, v: unknown) => setInp(p => ({ ...p, [k]: v }));
 
   const checks: UtilCheck[] = res ? [
-    { label: 'Overturning (FoS ≥ 2.0)', demand: 2.0, capacity: res.FoS_overturning, note: 'Limit / FoS', invert: true },
-    { label: 'Sliding (FoS ≥ 1.5)', demand: 1.5, capacity: res.FoS_sliding, note: 'Limit / FoS', invert: true },
-    { label: 'Bearing pressure', demand: res.bearingPressure, capacity: inp.bearingCapacity, unit: 'kPa', note: 'σ / q_allow' },
-    { label: 'Stem bending', demand: res.Med_stem, capacity: res.Med_stem / 0.5, unit: 'kNm/m', note: 'MEd / MRd (approx)' },
+    { label: 'Overturning (FoS ≥ 2.0)', demand: 2.0, capacity: res.FoS_overturning, note: 'Limit / FoS', invert: true,
+      hint: 'Extend the base heel slab to move the resultant force closer to the centre, or increase backfill weight on the heel.' },
+    { label: 'Sliding (FoS ≥ 1.5)', demand: 1.5, capacity: res.FoS_sliding, note: 'Limit / FoS', invert: true,
+      hint: 'Widen the base to increase the friction area, or add a shear key beneath the foundation.' },
+    { label: 'Bearing pressure', demand: res.bearingPressure, capacity: inp.bearingCapacity, unit: 'kPa', note: 'σ / q_allow',
+      hint: 'Widen the base slab to reduce eccentricity and spread the load over a larger area.' },
+    { label: 'Stem bending', demand: res.Med_stem, capacity: res.Med_stem / 0.5, unit: 'kNm/m', note: 'MEd / MRd (approx)',
+      hint: 'Increase stem thickness at the base or add more vertical reinforcement on the retained-earth face.' },
   ] : [];
 
   return (

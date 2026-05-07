@@ -96,9 +96,12 @@ export default function MasonryWallDesign() {
   const set = (k: keyof MasonryInputs, v: unknown) => setInp(p => ({ ...p, [k]: v }));
 
   const checks: UtilCheck[] = res ? [
-    { label: 'Vertical compression', demand: res.NEdpm, capacity: res.NRd, unit: 'kN/m', note: 'NEd / NRd' },
-    { label: 'Slenderness (λ ≤ 27)', demand: res.slenderness, capacity: 27, note: 'λ / limit' },
-    ...(inp.windPressure > 0 ? [{ label: 'Wind bending', demand: res.Med_wind, capacity: res.MRd_wind, unit: 'kNm/m', note: 'MEd / MRd' }] : []),
+    { label: 'Vertical compression', demand: res.NEdpm, capacity: res.NRd, unit: 'kN/m', note: 'NEd / NRd',
+      hint: 'Use a denser block, stronger mortar class, or increase wall thickness.' },
+    { label: 'Slenderness (λ ≤ 27)', demand: res.slenderness, capacity: 27, note: 'λ / limit',
+      hint: 'Wall is too slender. Add an intermediate restraint (floor/pilaster) or increase wall thickness.' },
+    ...(inp.windPressure > 0 ? [{ label: 'Wind bending', demand: res.Med_wind, capacity: res.MRd_wind, unit: 'kNm/m', note: 'MEd / MRd',
+      hint: 'Increase wall thickness to raise section modulus, or add vertical RC reinforcement in the cavity.' }] : []),
   ] : [];
 
   return (

@@ -81,9 +81,12 @@ export default function CompositeBeam() {
   const set = (k: keyof CompositeBeamInputs, v: unknown) => setInp(p => ({ ...p, [k]: v }));
 
   const checks: UtilCheck[] = res ? [
-    { label: 'Bending (partial composite)', demand: res.Med, capacity: res.Mpl_partial, unit: 'kNm', note: 'MEd / Mpl,Rd' },
-    { label: 'Vertical shear', demand: res.Ved, capacity: res.VplRd, unit: 'kN', note: 'VEd / Vpl,Rd' },
-    { label: 'Deflection', demand: res.delta_total, capacity: res.deltaLimit, unit: 'mm', note: 'δ / (L/360)' },
+    { label: 'Bending (partial composite)', demand: res.Med, capacity: res.Mpl_partial, unit: 'kNm', note: 'MEd / Mpl,Rd',
+      hint: 'Add more shear studs to increase composite action, or upsize the steel section.' },
+    { label: 'Vertical shear', demand: res.Ved, capacity: res.VplRd, unit: 'kN', note: 'VEd / Vpl,Rd',
+      hint: 'Shear is resisted by the steel web alone. Use a heavier section with a deeper, thicker web.' },
+    { label: 'Deflection (L/360)', demand: res.delta_total, capacity: res.deltaLimit, unit: 'mm', note: 'δ / (L/360)',
+      hint: 'Increase the steel section depth or use propped construction to reduce long-term deflection.' },
   ] : [];
 
   const sec = UB_SECTIONS.find(s => s.name === inp.steelSection) ?? UB_SECTIONS[3];
