@@ -13,6 +13,10 @@ import FoundationDesign from './components/analysis/FoundationDesign';
 import RetainingWallDesign from './components/analysis/RetainingWallDesign';
 import StaircaseDesign from './components/analysis/StaircaseDesign';
 import SteelDesign from './components/analysis/SteelDesign';
+import FlatSlabDesign from './components/analysis/FlatSlabDesign';
+import PileDesign from './components/analysis/PileDesign';
+import PileCapDesign from './components/analysis/PileCapDesign';
+import MasonryWallDesign from './components/analysis/MasonryWallDesign';
 import BOQ from './components/reports/BOQ';
 import LoadCalculatorPage from './components/analysis/LoadCalculatorPage';
 import QuickDesign from './components/analysis/QuickDesign';
@@ -36,7 +40,8 @@ import { useProject } from './context/ProjectContext';
 
 type Page =
   | 'dashboard' | 'quick' | 'loads' | 'wizard'
-  | 'beam' | 'column' | 'slab' | 'foundation' | 'retaining-wall' | 'staircase' | 'steel'
+  | 'beam' | 'column' | 'slab' | 'flat-slab' | 'foundation' | 'retaining-wall' | 'staircase' | 'steel'
+  | 'pile' | 'pile-cap' | 'masonry-wall'
   | 'boq' | 'projects' | 'project-detail'
   | 'cube-tests' | 'checklists' | 'site-investigation'
   | 'code-reference' | 'unit-converter' | 'worked-examples'
@@ -46,8 +51,11 @@ const pageTitle: Record<Page, string> = {
   dashboard: 'Dashboard', quick: 'Quick Design Wizard', loads: 'Load Calculator',
   wizard: 'Design Wizard — What do I need to design?',
   beam: 'RC Beam Design', column: 'RC Column Design', slab: 'RC Slab Design',
+  'flat-slab': 'Flat Slab Design (EC2 Annex I)',
   foundation: 'Foundation Design', 'retaining-wall': 'Retaining Wall Design',
   staircase: 'RC Staircase Design', steel: 'Steel Member Design',
+  pile: 'Pile Capacity Design', 'pile-cap': 'Pile Cap Design',
+  'masonry-wall': 'Masonry Wall Design (EC6)',
   boq: 'Bill of Quantities', projects: 'Project Register', 'project-detail': 'Project Detail',
   'cube-tests': 'Concrete Cube Test Log', checklists: 'Inspection Checklists',
   'site-investigation': 'Site Investigation Log',
@@ -77,10 +85,18 @@ const NAV_GROUPS: NavGroup[] = [
   { label: 'RC Concrete Design', items: [
     { id: 'beam', label: 'Beam', icon: Layers },
     { id: 'column', label: 'Column', icon: Columns3 },
-    { id: 'slab', label: 'Slab', icon: Square },
-    { id: 'foundation', label: 'Foundation', icon: Hammer },
+    { id: 'slab', label: 'One-Way Slab', icon: Square },
+    { id: 'flat-slab', label: 'Flat Slab', icon: Square },
+    { id: 'foundation', label: 'Pad Foundation', icon: Hammer },
     { id: 'retaining-wall', label: 'Retaining Wall', icon: AlertTriangle },
     { id: 'staircase', label: 'Staircase', icon: Footprints },
+  ]},
+  { label: 'Geotechnical', items: [
+    { id: 'pile', label: 'Pile Capacity', icon: Hammer },
+    { id: 'pile-cap', label: 'Pile Cap', icon: Square },
+  ]},
+  { label: 'Masonry', items: [
+    { id: 'masonry-wall', label: 'Masonry Wall', icon: Layers },
   ]},
   { label: 'Steel Design', items: [
     { id: 'steel', label: 'Steel Member', icon: Layers },
@@ -240,6 +256,10 @@ function AppInner() {
           {page === 'foundation'       && <FoundationDesign />}
           {page === 'retaining-wall'   && <RetainingWallDesign />}
           {page === 'staircase'        && <StaircaseDesign />}
+          {page === 'flat-slab'        && <FlatSlabDesign />}
+          {page === 'pile'             && <PileDesign />}
+          {page === 'pile-cap'         && <PileCapDesign />}
+          {page === 'masonry-wall'     && <MasonryWallDesign />}
           {page === 'steel'            && <SteelDesign />}
           {page === 'boq'              && <BOQ />}
           {page === 'projects'         && <ProjectList onSelect={goToProject} />}

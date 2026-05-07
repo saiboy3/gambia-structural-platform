@@ -52,6 +52,11 @@ export function chooseBars(AsReq: number, preferDia?: number): { dia: number; co
   return best;
 }
 
+// Alias used by slab/pile-cap calculations — returns spacing-based selection per metre
+export function chooseBarsPerMetre(AsReq: number): { dia: number; spacing: number; As: number } {
+  return chooseSpacing(AsReq);
+}
+
 // Choose bar spacing (mm) for slab/wall steel (per metre)
 export function chooseSpacing(AsReq: number): { dia: number; spacing: number; As: number } {
   for (const dia of BAR_DIAMETERS) {
