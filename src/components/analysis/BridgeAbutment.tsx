@@ -251,15 +251,41 @@ export default function BridgeAbutment() {
 
   const set = (k: keyof AbutmentInputs, v: unknown) => setInp(p => ({ ...p, [k]: v }));
 
+  const runWith = (patch: Partial<AbutmentInputs>) => {
+    const next = { ...inp, ...patch };
+    setInp(next);
+    setRes(designAbutment(next, factors));
+  };
+
   const checks: UtilCheck[] = res ? [
     { label: 'Overturning (FoS ≥ 2.0)', demand: 2.0, capacity: res.FoS_overturning, note: 'Limit / FoS', invert: true,
-      hint: 'Extend the base heel slab to move the resultant force closer to the centre, or increase backfill weight on the heel.' },
+      hint: 'Extend the base heel slab to move the resultant force closer to the centre.',
+      actions: [
+        { label: `+0.5 m base length (→ ${(inp.baseLength + 0.5).toFixed(1)} m)`, onClick: () => runWith({ baseLength: inp.baseLength + 0.5 }) },
+        { label: `+1.0 m base length (→ ${(inp.baseLength + 1.0).toFixed(1)} m)`, onClick: () => runWith({ baseLength: inp.baseLength + 1.0 }) },
+      ],
+    },
     { label: 'Sliding (FoS ≥ 1.5)', demand: 1.5, capacity: res.FoS_sliding, note: 'Limit / FoS', invert: true,
-      hint: 'Widen the base to increase the friction area, or add a shear key beneath the foundation.' },
+      hint: 'Widen the base to increase the friction area, or add a shear key beneath the foundation.',
+      actions: [
+        { label: `+0.5 m base length (→ ${(inp.baseLength + 0.5).toFixed(1)} m)`, onClick: () => runWith({ baseLength: inp.baseLength + 0.5 }) },
+        { label: `+100 mm base thickness (→ ${inp.baseThick + 100} mm)`, onClick: () => runWith({ baseThick: inp.baseThick + 100 }) },
+      ],
+    },
     { label: 'Bearing pressure', demand: res.bearingPressure, capacity: inp.bearingCapacity, unit: 'kPa', note: 'σ / q_allow',
-      hint: 'Widen the base slab to reduce eccentricity and spread the load over a larger area.' },
+      hint: 'Widen the base slab to spread the load over a larger area.',
+      actions: [
+        { label: `+0.5 m base length (→ ${(inp.baseLength + 0.5).toFixed(1)} m)`, onClick: () => runWith({ baseLength: inp.baseLength + 0.5 }) },
+        { label: `+1.0 m base length (→ ${(inp.baseLength + 1.0).toFixed(1)} m)`, onClick: () => runWith({ baseLength: inp.baseLength + 1.0 }) },
+      ],
+    },
     { label: 'Stem bending', demand: res.Med_stem, capacity: res.Med_stem / 0.5, unit: 'kNm/m', note: 'MEd / MRd (approx)',
-      hint: 'Increase stem thickness at the base or add more vertical reinforcement on the retained-earth face.' },
+      hint: 'Increase stem thickness at the base to raise bending resistance.',
+      actions: [
+        { label: `+100 mm stem thick (→ ${inp.stemThick + 100} mm)`, onClick: () => runWith({ stemThick: inp.stemThick + 100 }) },
+        { label: `+200 mm stem thick (→ ${inp.stemThick + 200} mm)`, onClick: () => runWith({ stemThick: inp.stemThick + 200 }) },
+      ],
+    },
   ] : [];
 
   return (

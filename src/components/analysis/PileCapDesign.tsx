@@ -84,11 +84,27 @@ export default function PileCapDesign() {
   const setMat = (c: string, r: string) =>
     setInp(p => ({ ...p, material: getMaterial(c as ConcreteGrade, r as RebarGrade) }));
 
+  const runWith = (patch: Partial<PileCapInputs>) => {
+    const next = { ...inp, ...patch };
+    setInp(next);
+    setRes(designPileCap(next, factors));
+  };
+
   const checks: UtilCheck[] = res ? [
     { label: 'Punching at column', demand: res.vEd_col, capacity: res.vRdc, unit: 'MPa', note: 'vEd / vRd,c',
-      hint: 'Increase cap depth or enlarge the column. A deeper cap significantly raises punching resistance.' },
+      hint: 'Increase cap depth or enlarge the column. A deeper cap significantly raises punching resistance.',
+      actions: [
+        { label: `+50 mm depth (→ ${inp.capThickness + 50} mm)`, onClick: () => runWith({ capThickness: inp.capThickness + 50 }) },
+        { label: `+100 mm depth (→ ${inp.capThickness + 100} mm)`, onClick: () => runWith({ capThickness: inp.capThickness + 100 }) },
+      ],
+    },
     { label: 'Flexural steel', demand: res.As_req, capacity: res.bars.As, unit: 'mm²/m', note: 'As,req / As,prov', invert: true,
-      hint: 'Use a smaller bar spacing or a larger bar diameter to provide the required area per metre.' },
+      hint: 'Increase cap thickness — a deeper cap reduces the moment arm and As,req automatically.',
+      actions: [
+        { label: `+50 mm depth (→ ${inp.capThickness + 50} mm)`, onClick: () => runWith({ capThickness: inp.capThickness + 50 }) },
+        { label: `+100 mm depth (→ ${inp.capThickness + 100} mm)`, onClick: () => runWith({ capThickness: inp.capThickness + 100 }) },
+      ],
+    },
   ] : [];
 
   return (

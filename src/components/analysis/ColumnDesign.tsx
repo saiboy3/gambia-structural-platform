@@ -25,16 +25,36 @@ const defaultInputs: ColumnInputs = {
   braced: true,
 };
 
-function buildColChecks(inp: ColumnInputs, res: ColumnResults): UtilCheck[] {
+function buildColChecks(
+  inp: ColumnInputs,
+  res: ColumnResults,
+  runWith: (patch: Partial<ColumnInputs>) => void,
+): UtilCheck[] {
   return [
     { label: 'Axial capacity', demand: inp.Ned, capacity: res.capacity, unit: 'kN', note: 'NEd / NRd',
-      hint: 'Column cannot carry the axial load. Increase section size, add bars, or use higher-grade concrete.' },
+      hint: 'Column cannot carry the axial load. Increase section size or use higher-grade concrete.',
+      actions: [
+        { label: `+50 mm b (→ ${inp.b + 50} mm)`, onClick: () => runWith({ b: inp.b + 50 }) },
+        { label: `+50 mm h (→ ${inp.h + 50} mm)`, onClick: () => runWith({ h: inp.h + 50 }) },
+        { label: `+50 mm b & h`, onClick: () => runWith({ b: inp.b + 50, h: inp.h + 50 }) },
+      ],
+    },
     { label: 'As provided', demand: res.mainBars.As, capacity: res.AsReq, unit: 'mm²', note: 'As,prov / As,req', invert: true,
-      hint: 'Required area not met. Select a larger bar diameter or increase the number of bars.' },
+      hint: 'Required area not met. Increase section size to reduce As,req, or the calculation will upsize bars automatically.',
+      actions: [
+        { label: `+50 mm b (→ ${inp.b + 50} mm)`, onClick: () => runWith({ b: inp.b + 50 }) },
+        { label: `+50 mm h (→ ${inp.h + 50} mm)`, onClick: () => runWith({ h: inp.h + 50 }) },
+      ],
+    },
     { label: 'Min steel (0.2% Ac)', demand: res.mainBars.As, capacity: res.minAs, unit: 'mm²', note: 'As,prov / As,min', invert: true,
       hint: 'Code minimum ensures ductility. Provide at least 4 bars regardless of load.' },
     { label: 'Max steel (4% Ac)', demand: res.mainBars.As, capacity: res.maxAs, unit: 'mm²', note: 'As,prov / As,max',
-      hint: 'Over-reinforcing causes congestion and poor concrete compaction. Increase section size instead.' },
+      hint: 'Over-reinforcing causes congestion. Increase section size to keep steel ratio below 4%.',
+      actions: [
+        { label: `+50 mm b & h`, onClick: () => runWith({ b: inp.b + 50, h: inp.h + 50 }) },
+        { label: `+100 mm b & h`, onClick: () => runWith({ b: inp.b + 100, h: inp.h + 100 }) },
+      ],
+    },
   ];
 }
 
@@ -50,6 +70,12 @@ export default function ColumnDesign() {
 
   const setMat = (concrete: ConcreteGrade, rebar: RebarGrade) =>
     setInp(prev => ({ ...prev, material: getMaterial(concrete, rebar) }));
+
+  const runWith = (patch: Partial<ColumnInputs>) => {
+    const next = { ...inp, ...patch };
+    setInp(next);
+    setRes(designColumn(next, factors));
+  };
 
   return (
     <div className="space-y-3">
@@ -187,7 +213,7 @@ export default function ColumnDesign() {
 
         {activeTab === 'utilisation' && (
           res
-            ? <UtilisationBars checks={buildColChecks(inp, res)} title="Capacity checks" />
+            ? <UtilisationBars checks={buildColChecks(inp, res, runWith)} title="Capacity checks" />
             : <p className="text-sm text-slate-400 text-center py-8">Run design first</p>
         )}
       </Card>

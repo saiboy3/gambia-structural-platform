@@ -27,7 +27,12 @@ const defaultInputs: BeamInputs = {
   material: getMaterial('C25/30', 'B500B'),
 };
 
-function buildChecks(inp: BeamInputs, res: BeamResults, factors: ReturnType<typeof useBuildingCode>['factors']): UtilCheck[] {
+function buildChecks(
+  inp: BeamInputs,
+  res: BeamResults,
+  factors: ReturnType<typeof useBuildingCode>['factors'],
+  runWith: (patch: Partial<BeamInputs>) => void,
+): UtilCheck[] {
   const { fck } = inp.material;
   const Klim = 0.167;
   const K = (res.Med * 1e6) / (fck * inp.width * res.d * res.d);
@@ -43,6 +48,10 @@ function buildChecks(inp: BeamInputs, res: BeamResults, factors: ReturnType<type
       note: 'K / Klim',
       unit: '',
       hint: 'K > 0.167 means the compression zone is over-stressed. Increase beam depth or add top compression bars.',
+      actions: [
+        { label: `+50 mm depth (→ ${inp.depth + 50} mm)`, onClick: () => runWith({ depth: inp.depth + 50 }) },
+        { label: `+50 mm width (→ ${inp.width + 50} mm)`, onClick: () => runWith({ width: inp.width + 50 }) },
+      ],
     },
     {
       label: 'Flexural steel',
@@ -51,7 +60,11 @@ function buildChecks(inp: BeamInputs, res: BeamResults, factors: ReturnType<type
       unit: 'mm²',
       note: 'As,prov / As,req',
       invert: true,
-      hint: 'Provided steel must meet required area. Select a larger bar diameter or increase the bar count.',
+      hint: 'Provided steel must meet required area. Increase beam depth to reduce As,req.',
+      actions: [
+        { label: `+25 mm depth (→ ${inp.depth + 25} mm)`, onClick: () => runWith({ depth: inp.depth + 25 }) },
+        { label: `+50 mm depth (→ ${inp.depth + 50} mm)`, onClick: () => runWith({ depth: inp.depth + 50 }) },
+      ],
     },
     {
       label: 'Shear',
@@ -59,14 +72,22 @@ function buildChecks(inp: BeamInputs, res: BeamResults, factors: ReturnType<type
       capacity: res.Ved / (res.shearOK ? 0.95 : 1.05),
       unit: 'kN',
       note: 'VEd / VRd',
-      hint: 'Reduce link spacing, add stirrup legs, or widen the web to raise shear capacity.',
+      hint: 'Widen the web or increase depth to raise concrete shear capacity.',
+      actions: [
+        { label: `+50 mm width (→ ${inp.width + 50} mm)`, onClick: () => runWith({ width: inp.width + 50 }) },
+        { label: `+50 mm depth (→ ${inp.depth + 50} mm)`, onClick: () => runWith({ depth: inp.depth + 50 }) },
+      ],
     },
     {
       label: 'Span / depth (deflection)',
       demand: +actualLD.toFixed(1),
       capacity: +limitRatio.toFixed(1),
       note: 'actual / limit',
-      hint: 'Ratio too high means excessive deflection. Increase beam depth or add compression steel.',
+      hint: 'Ratio too high means excessive deflection. Increase beam depth.',
+      actions: [
+        { label: `+50 mm depth (→ ${inp.depth + 50} mm)`, onClick: () => runWith({ depth: inp.depth + 50 }) },
+        { label: `+100 mm depth (→ ${inp.depth + 100} mm)`, onClick: () => runWith({ depth: inp.depth + 100 }) },
+      ],
     },
     {
       label: 'Crack width',
@@ -74,7 +95,11 @@ function buildChecks(inp: BeamInputs, res: BeamResults, factors: ReturnType<type
       capacity: 0.3,
       unit: 'mm',
       note: 'wk / wmax',
-      hint: 'Use smaller-diameter bars at closer spacing to distribute tension across the face.',
+      hint: 'Distribute steel across a wider face. Increase beam width to reduce bar stress.',
+      actions: [
+        { label: `+50 mm width (→ ${inp.width + 50} mm)`, onClick: () => runWith({ width: inp.width + 50 }) },
+        { label: `+100 mm width (→ ${inp.width + 100} mm)`, onClick: () => runWith({ width: inp.width + 100 }) },
+      ],
     },
   ];
 }
@@ -96,6 +121,13 @@ export default function BeamDesign() {
     if (overrideInp) setInp(overrideInp);
     setRes(designBeam(target, factors));
     setMode('standard');
+  };
+
+  // Called by utilisation quick-action buttons — patches inputs and immediately recalculates
+  const runWith = (patch: Partial<BeamInputs>) => {
+    const next = { ...inp, ...patch };
+    setInp(next);
+    setRes(designBeam(next, factors));
   };
 
   const wEd = 1.35 * inp.deadLoad + 1.5 * inp.liveLoad;
@@ -379,7 +411,7 @@ export default function BeamDesign() {
 
             {activeTab === 'utilisation' && (
               res
-                ? <UtilisationBars checks={buildChecks(inp, res, factors)} title="Check utilisation" />
+                ? <UtilisationBars checks={buildChecks(inp, res, factors, runWith)} title="Check utilisation" />
                 : <p className="text-sm text-slate-400 text-center py-8">Run design first</p>
             )}
           </Card>

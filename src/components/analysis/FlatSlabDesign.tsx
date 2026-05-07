@@ -126,15 +126,42 @@ export default function FlatSlabDesign() {
   const setMat = (c: string, r: string) =>
     setInp(p => ({ ...p, material: getMaterial(c as ConcreteGrade, r as RebarGrade) }));
 
+  const runWith = (patch: Partial<FlatSlabInputs>) => {
+    const next = { ...inp, ...patch };
+    setInp(next);
+    setRes(designFlatSlab(next, factors));
+  };
+
   const checks: UtilCheck[] = res ? [
     { label: 'Punching shear', demand: res.vEd, capacity: res.vRdc, unit: 'MPa', note: 'vEd / vRd,c',
-      hint: 'Critical failure mode for flat slabs. Increase slab depth, add shear studs, or enlarge the column.' },
+      hint: 'Critical failure mode for flat slabs. Increase slab depth or enlarge the column.',
+      actions: [
+        { label: `+25 mm thickness (→ ${inp.thickness + 25} mm)`, onClick: () => runWith({ thickness: inp.thickness + 25 }) },
+        { label: `+50 mm thickness (→ ${inp.thickness + 50} mm)`, onClick: () => runWith({ thickness: inp.thickness + 50 }) },
+        { label: `+50 mm col. cx (→ ${inp.columnCx + 50} mm)`, onClick: () => runWith({ columnCx: inp.columnCx + 50 }) },
+      ],
+    },
     { label: 'Col. strip — top steel', demand: res.As_cs_top, capacity: res.bars_cs_top.As, unit: 'mm²/m', note: 'As,req / As,prov', invert: true,
-      hint: 'Top bars resist hogging over columns. Tighten bar spacing or use a larger diameter.' },
+      hint: 'Top bars resist hogging over columns. Increasing thickness reduces As,req automatically.',
+      actions: [
+        { label: `+25 mm thickness (→ ${inp.thickness + 25} mm)`, onClick: () => runWith({ thickness: inp.thickness + 25 }) },
+        { label: `+50 mm thickness (→ ${inp.thickness + 50} mm)`, onClick: () => runWith({ thickness: inp.thickness + 50 }) },
+      ],
+    },
     { label: 'Col. strip — bottom steel', demand: res.As_cs_bot, capacity: res.bars_cs_bot.As, unit: 'mm²/m', note: 'As,req / As,prov', invert: true,
-      hint: 'Bottom bars resist mid-span sagging. Tighten bar spacing or use a larger diameter.' },
+      hint: 'Bottom bars resist mid-span sagging. Increasing thickness reduces As,req automatically.',
+      actions: [
+        { label: `+25 mm thickness (→ ${inp.thickness + 25} mm)`, onClick: () => runWith({ thickness: inp.thickness + 25 }) },
+        { label: `+50 mm thickness (→ ${inp.thickness + 50} mm)`, onClick: () => runWith({ thickness: inp.thickness + 50 }) },
+      ],
+    },
     { label: 'Span / depth ratio', demand: res.spanRatio, capacity: inp.interiorCol ? 31 : 28, note: 'actual / limit',
-      hint: 'Slab is too shallow relative to span. Increase thickness — flat slabs are typically span/30 to span/35.' },
+      hint: 'Slab is too shallow relative to span. Increase thickness — flat slabs are typically span/30 to span/35.',
+      actions: [
+        { label: `+25 mm thickness (→ ${inp.thickness + 25} mm)`, onClick: () => runWith({ thickness: inp.thickness + 25 }) },
+        { label: `+50 mm thickness (→ ${inp.thickness + 50} mm)`, onClick: () => runWith({ thickness: inp.thickness + 50 }) },
+      ],
+    },
   ] : [];
 
   return (

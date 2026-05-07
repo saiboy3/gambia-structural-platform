@@ -3,6 +3,11 @@
  * Green < 80%, Amber 80–100%, Red > 100%
  */
 
+export interface QuickAction {
+  label: string;        // e.g. "+50 mm depth"
+  onClick: () => void;  // adjusts input & immediately recalculates
+}
+
 export interface UtilCheck {
   label: string;
   demand: number;       // actual value
@@ -11,6 +16,7 @@ export interface UtilCheck {
   note?: string;        // formula, e.g. "MEd / MRd"
   hint?: string;        // actionable tip — shown below the bar
   invert?: boolean;     // true when demand > capacity = PASS (e.g. As,prov > As,req)
+  actions?: QuickAction[];  // one-click parameter tweaks — shown when utilisation > 60 %
 }
 
 function pct(check: UtilCheck) {
@@ -115,6 +121,26 @@ export default function UtilisationBars({ checks, title }: Props) {
                     ? `↑ ${chk.hint}`
                     : `· ${chk.hint}`}
               </p>
+            )}
+
+            {/* Quick-fix action buttons — visible when utilisation > 60 % */}
+            {chk.actions && chk.actions.length > 0 && raw > 60 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                <span className="text-[9px] text-slate-400 self-center mr-0.5">Try:</span>
+                {chk.actions.map((a, j) => (
+                  <button
+                    key={j}
+                    onClick={a.onClick}
+                    className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold
+                      transition-all active:scale-95
+                      ${raw > 100
+                        ? 'border-red-400 text-red-700 bg-white/70 hover:bg-red-50'
+                        : 'border-amber-400 text-amber-700 bg-white/70 hover:bg-amber-50'}`}
+                  >
+                    {a.label}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
         );

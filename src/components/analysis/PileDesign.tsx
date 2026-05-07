@@ -94,11 +94,29 @@ export default function PileDesign() {
 
   const removeLayer = (i: number) => setInp(p => ({ ...p, layers: p.layers.filter((_, idx) => idx !== i) }));
 
+  const runWith = (patch: Partial<PileInputs>) => {
+    const next = { ...inp, ...patch };
+    setInp(next);
+    setRes(designPile(next));
+  };
+
   const checks: UtilCheck[] = res ? [
     { label: 'Shaft friction', demand: res.Qs, capacity: res.Qu, unit: 'kN', note: 'Qs/Qu ratio',
-      hint: 'Friction is the dominant component. Increase pile length to mobilise more skin resistance through the soil profile.' },
+      hint: 'Friction is the dominant component. Increase pile length to mobilise more skin resistance through the soil profile.',
+      actions: [
+        { label: `+1 m length (→ ${inp.length + 1} m)`, onClick: () => runWith({ length: inp.length + 1 }) },
+        { label: `+2 m length (→ ${inp.length + 2} m)`, onClick: () => runWith({ length: inp.length + 2 }) },
+        { label: `+50 mm dia (→ ${inp.diameter + 50} mm)`, onClick: () => runWith({ diameter: inp.diameter + 50 }) },
+      ],
+    },
     { label: 'End bearing', demand: res.Qb, capacity: res.Qu, unit: 'kN', note: 'Qb/Qu ratio',
-      hint: 'Bearing is the dominant component. Ensure the pile tip is seated in a competent stratum, or increase diameter.' },
+      hint: 'Bearing is the dominant component. Ensure the pile tip is seated in a competent stratum, or increase diameter.',
+      actions: [
+        { label: `+50 mm dia (→ ${inp.diameter + 50} mm)`, onClick: () => runWith({ diameter: inp.diameter + 50 }) },
+        { label: `+100 mm dia (→ ${inp.diameter + 100} mm)`, onClick: () => runWith({ diameter: inp.diameter + 100 }) },
+        { label: `+1 m length (→ ${inp.length + 1} m)`, onClick: () => runWith({ length: inp.length + 1 }) },
+      ],
+    },
   ] : [];
 
   const isClay = (t: string) => t.includes('clay');
