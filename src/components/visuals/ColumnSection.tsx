@@ -140,10 +140,12 @@ export default function ColumnSection({ inputs, results }: Props) {
           stroke="#f97316" strokeWidth={0.8} strokeDasharray="2,2" />
         <text x={ox + 2} y={oy + coverS - 2} fontSize={6.5} fill="#ea580c">c={inputs.cover}</text>
 
-        {/* ── Axial load arrow (top) ── */}
-        <line x1={cx0} y1={oy - 32} x2={cx0} y2={oy - 2}
+        {/* ── Axial load arrow — offset right of centre so it clears the b= dimension text ── */}
+        <line x1={cx0 + bw * 0.2} y1={oy - 30} x2={cx0 + bw * 0.2} y2={oy - 2}
           stroke="#374151" strokeWidth={2} markerEnd="url(#loadArrow)" />
-        <text x={cx0} y={oy - 36} textAnchor="middle" fontSize={8} fill="#374151" fontWeight="700">
+        {/* White bg prevents arrow line showing through text */}
+        <rect x={cx0 + bw * 0.2 - 38} y={oy - 44} width={76} height={13} rx={2} fill="white" fillOpacity={0.9} />
+        <text x={cx0 + bw * 0.2} y={oy - 34} textAnchor="middle" fontSize={8} fill="#374151" fontWeight="700">
           NEd = {inputs.Ned.toFixed(0)} kN
         </text>
 
@@ -175,19 +177,21 @@ export default function ColumnSection({ inputs, results }: Props) {
         {/* Properties */}
         {[
           [`${n}T${results.mainBars.dia}`, 'Main bars'],
-          [`As = ${results.mainBars.As.toFixed(0)} mm²`, ''],
+          [`As = ${results.mainBars.As.toFixed(0)} mm²`, 'Steel area'],
           [`ρ = ${((results.mainBars.As / (inputs.b * inputs.h)) * 100).toFixed(2)}%`, 'Steel ratio'],
           [`T${results.links.dia}@${results.links.spacing}mm`, 'Links'],
           [`NRd = ${results.capacity.toFixed(0)} kN`, 'Axial cap.'],
         ].map(([val, lbl], i) => (
           <g key={i}>
-            <text x={panelX + 8} y={oy + 52 + i * 22} fontSize={8.5} fill="#374151" fontWeight="700">{val}</text>
-            <text x={panelX + 8} y={oy + 62 + i * 22} fontSize={7} fill="#64748b">{lbl}</text>
+            {/* clip at panel right edge with a rect behind */}
+            <rect x={panelX + 6} y={oy + 46 + i * 18} width={panelW - 10} height={9} fill="white" fillOpacity={0.7} />
+            <text x={panelX + 8} y={oy + 54 + i * 18} fontSize={8} fill="#374151" fontWeight="700">{val}</text>
+            <text x={panelX + 8} y={oy + 63 + i * 18} fontSize={6.5} fill="#64748b">{lbl}</text>
           </g>
         ))}
 
-        {/* ── Legend ── */}
-        <g transform={`translate(${panelX}, ${oy + bh - 46})`}>
+        {/* ── Legend — clamped so it never overlaps the property rows ── */}
+        <g transform={`translate(${panelX}, ${Math.max(oy + 46 + 5 * 18 + 6, oy + bh - 46)})`}>
           <circle cx={10} cy={8} r={5} fill="#f59e0b" />
           <text x={20} y={11} fontSize={7.5} fill="#374151">Main bar</text>
           <rect x={5} y={18} width={10} height={7} fill="none" stroke="#0ea5e9" strokeWidth={1.5} />

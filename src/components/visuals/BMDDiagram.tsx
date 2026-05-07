@@ -244,10 +244,9 @@ export default function BMDDiagram({ span, supportType, wEd, Med, Ved }: Props) 
         <ReactionArrow x={PAD} y={BEAM_Y + BEAM_H + 18} label={`R=${fmt(wEd * span)} kN`} />
       )}
 
-      {/* Span dimension */}
-      <line x1={PAD} y1={BEAM_Y - 8} x2={PAD + LEN} y2={BEAM_Y - 8}
-        stroke="#94a3b8" strokeWidth={0.8} markerEnd="url(#dimArr)" markerStart="url(#dimArrR)" />
-      <text x={W / 2} y={BEAM_Y - 12} textAnchor="middle" fontSize={8} fill="#64748b">L = {span} m</text>
+      {/* Span label — white text centred on beam body, avoids UDL arrow zone */}
+      <text x={W / 2} y={BEAM_Y + BEAM_H / 2 + 3} textAnchor="middle" fontSize={8}
+        fill="white" fontWeight="700">L = {span} m</text>
 
       {/* ── BMD ── */}
       {/* Zero line */}
@@ -263,9 +262,11 @@ export default function BMDDiagram({ span, supportType, wEd, Med, Ved }: Props) 
       {/* Mid-span quarter annotations */}
       {supportType === 'simply-supported' && (
         <>
-          <line x1={PAD + 0.25 * LEN} y1={bmdBase} x2={PAD + 0.25 * LEN} y2={bmdBase - 0.75 * bmdScale}
+          <line x1={PAD + 0.25 * LEN} y1={bmdBase} x2={PAD + 0.25 * LEN} y2={bmdBase - 0.5 * bmdScale}
             stroke="#93c5fd" strokeWidth={0.6} strokeDasharray="2,2" />
-          <text x={PAD + 0.25 * LEN + 3} y={bmdBase - 0.75 * bmdScale} fontSize={6.5} fill="#93c5fd">
+          {/* white background prevents overlap with BMD fill */}
+          <rect x={PAD + 0.25 * LEN + 2} y={bmdBase - 0.5 * bmdScale - 8} width={46} height={10} rx={1} fill="white" fillOpacity={0.85} />
+          <text x={PAD + 0.25 * LEN + 3} y={bmdBase - 0.5 * bmdScale} fontSize={6.5} fill="#1d4ed8">
             {fmt(Med * 0.75)} kNm
           </text>
           <CalloutBox x={W / 2} y={bmdBase - bmdScale + 2}
@@ -294,11 +295,12 @@ export default function BMDDiagram({ span, supportType, wEd, Med, Ved }: Props) 
       {supportType === 'simply-supported' && (
         <>
           <CalloutBox x={PAD + 20} y={sfdBase - sfdScale + 2} value={`+${fmt(Ved)}`} unit="kN" color="#9d174d" />
-          <CalloutBox x={PAD + LEN - 20} y={sfdBase + sfdScale + 18} value={`−${fmt(Ved)}`} unit="kN" color="#9d174d" />
-          {/* Zero crossing */}
+          {/* Negative callout placed inside SFD zone, above the bottom boundary */}
+          <CalloutBox x={PAD + LEN - 20} y={sfdBase + sfdScale - 4} value={`−${fmt(Ved)}`} unit="kN" color="#9d174d" />
+          {/* Zero crossing tick + label below the baseline */}
           <line x1={PAD + LEN / 2} y1={sfdBase - 6} x2={PAD + LEN / 2} y2={sfdBase + 6}
             stroke="#9d174d" strokeWidth={1.2} />
-          <text x={PAD + LEN / 2 + 3} y={sfdBase - 2} fontSize={6.5} fill="#9d174d">V=0 @ L/2</text>
+          <text x={PAD + LEN / 2 + 3} y={sfdBase + 14} fontSize={6.5} fill="#9d174d">V=0 @ L/2</text>
         </>
       )}
       {supportType === 'cantilever' && (

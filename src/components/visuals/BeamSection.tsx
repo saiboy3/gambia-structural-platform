@@ -1,288 +1,316 @@
 /**
  * BeamSection — Engineering-standard RC beam cross-section SVG
- * Features: concrete cross-hatching, Whitney stress block, neutral axis,
- *           strain/stress distribution, dimension leaders, cover callout
+ * Layout (left→right):
+ *   [dim h] [section + cover callout] [dim d] [strain] [stress] [legend]
+ * All labels are placed in guaranteed-clear zones with no overlaps.
  */
 import type { BeamInputs, BeamResults } from '../../types/structural';
 
 interface Props { inputs: BeamInputs; results: BeamResults }
 
-// Diagonal hatch pattern for concrete
-function ConcreteHatch({ id, angle = 45 }: { id: string; angle?: number }) {
-  return (
-    <defs>
-      <pattern id={id} patternUnits="userSpaceOnUse" width={8} height={8}
-        patternTransform={`rotate(${angle})`}>
-        <line x1={0} y1={0} x2={0} y2={8} stroke="#94a3b8" strokeWidth={0.7} strokeOpacity={0.6} />
-      </pattern>
-    </defs>
-  );
-}
-
-// Dimension leader with double-headed arrow
-function DimLeader({ x1, y1, x2, y2, label, textX, textY, horizontal = false }:
-  { x1: number; y1: number; x2: number; y2: number; label: string; textX: number; textY: number; horizontal?: boolean }) {
-  return (
-    <g>
-      <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#64748b" strokeWidth={0.8} markerEnd="url(#dimArrow)" markerStart="url(#dimArrow)" />
-      {/* Extension lines */}
-      {horizontal ? (
-        <>
-          <line x1={x1} y1={y1 - 4} x2={x1} y2={y1 + 4} stroke="#64748b" strokeWidth={0.8} />
-          <line x1={x2} y1={y2 - 4} x2={x2} y2={y2 + 4} stroke="#64748b" strokeWidth={0.8} />
-        </>
-      ) : (
-        <>
-          <line x1={x1 - 4} y1={y1} x2={x1 + 4} y2={y1} stroke="#64748b" strokeWidth={0.8} />
-          <line x1={x2 - 4} y1={y2} x2={x2 + 4} y2={y2} stroke="#64748b" strokeWidth={0.8} />
-        </>
-      )}
-      <text x={textX} y={textY} textAnchor="middle" fontSize={8} fill="#475569" fontWeight="600">{label}</text>
-    </g>
-  );
-}
-
 export default function BeamSection({ inputs, results }: Props) {
-  // Canvas dims — wider to accommodate side diagrams
-  const W = 420, H = 280;
+  // ── Canvas ────────────────────────────────────────────────────────────────
+  const W = 460, H = 290;
 
-  // Section occupies left ~55% of canvas
-  const secW = 210, secH = 210;
-  const scale = Math.min((secW - 50) / inputs.width, (secH - 50) / inputs.depth);
+  // ── Section geometry ──────────────────────────────────────────────────────
+  // Left margin: 36px for the h-dimension leader
+  // Section occupies x: 36 → 36+bw, y: topPad → topPad+bh
+  const LEFT = 36, TOP = 32, BOT_PAD = 42;
+  const availW = 160;    // max section pixel-width
+  const availH = H - TOP - BOT_PAD;
+  const scale = Math.min(availW / inputs.width, availH / inputs.depth);
   const bw = inputs.width * scale;
   const bh = inputs.depth * scale;
-  const ox = 40 + (secW - 40 - bw) / 2;
-  const oy = (secH - bh) / 2 + 20;
+  const ox = LEFT;
+  const oy = TOP + (availH - bh) / 2;  // centre vertically
 
   const coverS = inputs.cover * scale;
-  const barDia = results.mainBars.dia;
-  const diaS = barDia * scale;
-
-  // Use pre-computed values from results
-  const d = results.d;
-  const x_mm = results.x;
-  const x_s = Math.min(x_mm * scale, bh * 0.5);  // clamp for display
-
-  // Bar positions (bottom tension)
-  const n = results.mainBars.count;
-  const barY = oy + bh - coverS - diaS / 2;
-  const barSpacing = n > 1 ? (bw - 2 * coverS) / (n - 1) : 0;
-  const bars = Array.from({ length: n }, (_, i) => ox + coverS + i * barSpacing);
-
-  // Stirrup
+  const barDia  = results.mainBars.dia;
+  const diaS    = barDia * scale;
   const stirDia = results.stirrups.dia * scale;
+
+  // Neutral axis and bar positions
+  const d    = results.d;
+  const x_mm = results.x;
+  const x_s  = Math.min(x_mm * scale, bh * 0.45);   // clamp display height
+
+  const n         = results.mainBars.count;
+  const barY      = oy + bh - coverS - diaS / 2;
+  const barSpacing = n > 1 ? (bw - 2 * coverS) / (n - 1) : 0;
+  const bars      = Array.from({ length: n }, (_, i) => ox + coverS + i * barSpacing);
+
   const stirX = ox + coverS - stirDia / 2;
   const stirY = oy + coverS - stirDia / 2;
   const stirW = bw - 2 * coverS + stirDia;
   const stirH = bh - 2 * coverS + stirDia;
 
-  // Side diagram positions
-  const sideX = ox + bw + 28;
-  const sideW = 36;
+  // ── Side-panel layout (all guaranteed right of section) ───────────────────
+  // d-dim line:   x = ox+bw+10  (10px gap from section right edge)
+  // strain panel: x = ox+bw+26  (16px gap from d-dim line centre)
+  // stress panel: x = ox+bw+70  (strain width=36, 8px gap)
+  // legend:       x = ox+bw+118 (stress width=36, 8px gap)
 
-  // Strain diagram (right side)
-  const strainX = sideX;
-  const stressX = sideX + sideW + 16;
+  const DIM_D_X   = ox + bw + 10;
+  const STRAIN_X  = ox + bw + 26;
+  const STRAIN_W  = 36;
+  const STRESS_X  = STRAIN_X + STRAIN_W + 8;
+  const STRESS_W  = 36;
+  const LEGEND_X  = STRESS_X + STRESS_W + 8;
+  const LEGEND_W  = W - LEGEND_X - 4;
+
+  // ── Neutral axis line (stops before side panels) ──────────────────────────
+  const NA_LINE_X2 = ox + bw + 5;   // stops 5px past section edge only
 
   return (
     <div className="flex flex-col items-center gap-2">
       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Cross-Section</p>
       <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="w-full border border-slate-200 rounded-lg bg-white">
         <defs>
-          <ConcreteHatch id="concreteHatch" />
-          <marker id="dimArrow" markerWidth={5} markerHeight={5} refX={2.5} refY={2.5} orient="auto">
+          <pattern id="bsHatch" patternUnits="userSpaceOnUse" width={8} height={8} patternTransform="rotate(45)">
+            <line x1={0} y1={0} x2={0} y2={8} stroke="#94a3b8" strokeWidth={0.7} strokeOpacity={0.55} />
+          </pattern>
+          <marker id="bsDimA" markerWidth={5} markerHeight={5} refX={0} refY={2.5} orient="auto">
             <path d="M0,0 L5,2.5 L0,5 Z" fill="#64748b" />
           </marker>
-          <marker id="dimArrowRev" markerWidth={5} markerHeight={5} refX={2.5} refY={2.5} orient="auto-start-reverse">
+          <marker id="bsDimB" markerWidth={5} markerHeight={5} refX={5} refY={2.5} orient="auto-start-reverse">
             <path d="M0,0 L5,2.5 L0,5 Z" fill="#64748b" />
           </marker>
         </defs>
 
-        {/* ── Section outline ── */}
-        <rect x={ox} y={oy} width={bw} height={bh}
-          fill="url(#concreteHatch)" stroke="#334155" strokeWidth={2} />
-        {/* Solid grey base for contrast */}
-        <rect x={ox} y={oy} width={bw} height={bh}
-          fill="#cbd5e1" fillOpacity={0.35} stroke="none" />
+        {/* ── Concrete section (hatch + tint) ── */}
+        <rect x={ox} y={oy} width={bw} height={bh} fill="url(#bsHatch)" stroke="#334155" strokeWidth={2} />
+        <rect x={ox} y={oy} width={bw} height={bh} fill="#cbd5e1" fillOpacity={0.3} stroke="none" />
 
-        {/* ── Whitney stress block (compression zone, top) ── */}
+        {/* ── Whitney stress block ── */}
         <rect x={ox} y={oy} width={bw} height={x_s}
-          fill="#3b82f6" fillOpacity={0.25} stroke="#3b82f6" strokeWidth={1} strokeDasharray="4,2" />
-        <text x={ox + bw + 4} y={oy + x_s / 2 + 3} fontSize={7.5} fill="#2563eb" fontWeight="700">
-          0.8x
-        </text>
+          fill="#3b82f6" fillOpacity={0.22} stroke="#3b82f6" strokeWidth={1} strokeDasharray="4,2" />
+        {/* 0.8x label — centred inside stress block, only if block tall enough */}
+        {x_s > 14 && (
+          <text x={ox + bw / 2} y={oy + x_s / 2 + 3.5}
+            textAnchor="middle" fontSize={7} fill="#1d4ed8" fontWeight="700">0.8x</text>
+        )}
 
-        {/* ── Neutral axis ── */}
-        <line x1={ox - 8} y1={oy + x_s} x2={ox + bw + 50} y2={oy + x_s}
-          stroke="#dc2626" strokeWidth={1} strokeDasharray="6,3" />
-        <text x={ox - 10} y={oy + x_s + 10} fontSize={7} fill="#dc2626" fontWeight="600" textAnchor="end">N.A.</text>
+        {/* ── Neutral axis — stops at section right edge ── */}
+        <line x1={ox - 6} y1={oy + x_s} x2={NA_LINE_X2} y2={oy + x_s}
+          stroke="#dc2626" strokeWidth={1} strokeDasharray="5,3" />
+        {/* N.A. label: left of section, clear of h-dim */}
+        <text x={ox - 8} y={oy + x_s - 3}
+          fontSize={7} fill="#dc2626" fontWeight="600" textAnchor="end">N.A.</text>
 
         {/* ── Stirrup ── */}
         <rect x={stirX} y={stirY} width={stirW} height={stirH}
           fill="none" stroke="#0ea5e9" strokeWidth={Math.max(stirDia, 1.8)} rx={3} />
 
-        {/* ── Main tension bars ── */}
+        {/* ── Tension bars ── */}
         {bars.map((bx, i) => (
           <g key={i}>
-            <circle cx={bx} cy={barY} r={diaS / 2 + 1} fill="#1e293b" />
-            <circle cx={bx} cy={barY} r={diaS / 2} fill="#f59e0b" />
+            <circle cx={bx} cy={barY} r={Math.max(diaS / 2 + 1, 4)} fill="#1e293b" />
+            <circle cx={bx} cy={barY} r={Math.max(diaS / 2, 3)}     fill="#f59e0b" />
           </g>
         ))}
 
         {/* ── Compression bars (2 top) ── */}
         {[ox + coverS + diaS / 2, ox + bw - coverS - diaS / 2].map((bx, i) => (
           <g key={`c${i}`}>
-            <circle cx={bx} cy={oy + coverS + diaS / 2} r={diaS * 0.4 + 1} fill="#1e293b" />
-            <circle cx={bx} cy={oy + coverS + diaS / 2} r={diaS * 0.4} fill="#a78bfa" />
+            <circle cx={bx} cy={oy + coverS + diaS / 2} r={Math.max(diaS * 0.4 + 1, 3.5)} fill="#1e293b" />
+            <circle cx={bx} cy={oy + coverS + diaS / 2} r={Math.max(diaS * 0.4, 2.5)}      fill="#a78bfa" />
           </g>
         ))}
 
-        {/* ── Cover callout ── */}
-        <line x1={ox} y1={barY} x2={ox + coverS} y2={barY}
-          stroke="#f97316" strokeWidth={1} strokeDasharray="2,2" />
-        <line x1={ox + coverS / 2} y1={oy} x2={ox + coverS / 2} y2={barY}
+        {/* ── Cover callout (leader line from corner to label outside section) ── */}
+        {/* Horizontal tick at top of cover zone */}
+        <line x1={ox} y1={oy + coverS} x2={ox + coverS} y2={oy + coverS}
           stroke="#f97316" strokeWidth={0.8} strokeDasharray="2,2" />
-        <text x={ox + coverS / 2 + 2} y={oy + coverS * 1.8} fontSize={7} fill="#ea580c">c={inputs.cover}</text>
+        {/* Leader going left to a label below the bottom of the section */}
+        <line x1={ox + coverS / 2} y1={oy + coverS}
+              x2={ox + coverS / 2} y2={oy + bh + 10}
+          stroke="#f97316" strokeWidth={0.6} strokeDasharray="2,2" />
+        <text x={ox + coverS / 2} y={oy + bh + 20}
+          textAnchor="middle" fontSize={7} fill="#ea580c" fontWeight="600">
+          c={inputs.cover}mm
+        </text>
 
-        {/* ── Dimension leaders ── */}
-        {/* Width */}
-        <DimLeader x1={ox} y1={oy - 14} x2={ox + bw} y2={oy - 14}
-          label={`b = ${inputs.width} mm`} textX={ox + bw / 2} textY={oy - 20} horizontal />
-        {/* Depth */}
-        <line x1={ox - 20} y1={oy} x2={ox - 20} y2={oy + bh}
-          stroke="#64748b" strokeWidth={0.8} markerEnd="url(#dimArrow)" markerStart="url(#dimArrow)" />
-        <line x1={ox - 24} y1={oy} x2={ox - 14} y2={oy} stroke="#64748b" strokeWidth={0.8} />
-        <line x1={ox - 24} y1={oy + bh} x2={ox - 14} y2={oy + bh} stroke="#64748b" strokeWidth={0.8} />
-        <text x={ox - 22} y={oy + bh / 2} fontSize={8} fill="#475569" fontWeight="600"
-          transform={`rotate(-90, ${ox - 22}, ${oy + bh / 2})`} textAnchor="middle">
+        {/* ── Dimension: width (b) — above section ── */}
+        <line x1={ox} y1={oy - 16} x2={ox + bw} y2={oy - 16}
+          stroke="#64748b" strokeWidth={0.8}
+          markerEnd="url(#bsDimA)" markerStart="url(#bsDimB)" />
+        <line x1={ox}      y1={oy - 20} x2={ox}      y2={oy - 12} stroke="#64748b" strokeWidth={0.8} />
+        <line x1={ox + bw} y1={oy - 20} x2={ox + bw} y2={oy - 12} stroke="#64748b" strokeWidth={0.8} />
+        {/* White background behind label to prevent hatch bleed */}
+        <rect x={ox + bw / 2 - 26} y={oy - 28} width={52} height={12} fill="white" />
+        <text x={ox + bw / 2} y={oy - 19} textAnchor="middle" fontSize={8} fill="#475569" fontWeight="700">
+          b = {inputs.width} mm
+        </text>
+
+        {/* ── Dimension: total depth (h) — left of section ── */}
+        <line x1={LEFT - 10} y1={oy} x2={LEFT - 10} y2={oy + bh}
+          stroke="#64748b" strokeWidth={0.8}
+          markerEnd="url(#bsDimA)" markerStart="url(#bsDimB)" />
+        <line x1={LEFT - 14} y1={oy}      x2={LEFT - 6} y2={oy}      stroke="#64748b" strokeWidth={0.8} />
+        <line x1={LEFT - 14} y1={oy + bh} x2={LEFT - 6} y2={oy + bh} stroke="#64748b" strokeWidth={0.8} />
+        <text x={LEFT - 12} y={oy + bh / 2} fontSize={8} fill="#475569" fontWeight="700"
+          transform={`rotate(-90, ${LEFT - 12}, ${oy + bh / 2})`} textAnchor="middle">
           h = {inputs.depth} mm
         </text>
 
-        {/* Effective depth d */}
-        <line x1={ox + bw + 10} y1={oy} x2={ox + bw + 10} y2={barY}
-          stroke="#0ea5e9" strokeWidth={0.8} markerEnd="url(#dimArrow)" markerStart="url(#dimArrow)" />
-        <line x1={ox + bw + 6} y1={oy} x2={ox + bw + 14} y2={oy} stroke="#0ea5e9" strokeWidth={0.8} />
-        <line x1={ox + bw + 6} y1={barY} x2={ox + bw + 14} y2={barY} stroke="#0ea5e9" strokeWidth={0.8} />
+        {/* ── Dimension: effective depth (d) — right of section, before strain panel ── */}
+        <line x1={DIM_D_X} y1={oy} x2={DIM_D_X} y2={barY}
+          stroke="#0ea5e9" strokeWidth={0.8}
+          markerEnd="url(#bsDimA)" markerStart="url(#bsDimB)" />
+        <line x1={DIM_D_X - 4} y1={oy}   x2={DIM_D_X + 4} y2={oy}   stroke="#0ea5e9" strokeWidth={0.8} />
+        <line x1={DIM_D_X - 4} y1={barY} x2={DIM_D_X + 4} y2={barY} stroke="#0ea5e9" strokeWidth={0.8} />
+        {/* d label — midpoint of the leader, on white background */}
+        <rect x={DIM_D_X + 2} y={(oy + barY) / 2 - 6} width={22} height={11} fill="white" />
+        <text x={DIM_D_X + 13} y={(oy + barY) / 2 + 3} fontSize={7} fill="#0284c7" fontWeight="700">
+          d={d.toFixed(0)}
+        </text>
 
         {/* ── Strain diagram ── */}
-        <text x={strainX + sideW / 2} y={oy - 6} fontSize={7.5} fill="#64748b" textAnchor="middle" fontWeight="700">Strain</text>
-        {/* Zero strain line at N.A. */}
-        <line x1={strainX} y1={oy + x_s} x2={strainX + sideW} y2={oy + x_s}
-          stroke="#94a3b8" strokeWidth={0.6} />
-        {/* Compression (top) → εcu = 0.0035 */}
-        <polygon
-          points={`${strainX + sideW / 2},${oy} ${strainX},${oy + x_s} ${strainX + sideW},${oy + x_s}`}
-          fill="#3b82f6" fillOpacity={0.3} stroke="#3b82f6" strokeWidth={0.8} />
-        <text x={strainX + sideW + 2} y={oy + 6} fontSize={6.5} fill="#2563eb">εcu</text>
-        {/* Tension (bottom) → εs */}
-        <polygon
-          points={`${strainX + sideW / 2},${oy + bh} ${strainX},${oy + x_s} ${strainX + sideW},${oy + x_s}`}
-          fill="#f59e0b" fillOpacity={0.3} stroke="#f59e0b" strokeWidth={0.8} />
-        <text x={strainX + sideW + 2} y={oy + bh - 2} fontSize={6.5} fill="#b45309">εs</text>
-        {/* Vertical axis */}
-        <line x1={strainX + sideW / 2} y1={oy} x2={strainX + sideW / 2} y2={oy + bh}
+        <text x={STRAIN_X + STRAIN_W / 2} y={oy - 4}
+          textAnchor="middle" fontSize={7.5} fill="#64748b" fontWeight="700">Strain</text>
+        {/* Vertical centre axis */}
+        <line x1={STRAIN_X + STRAIN_W / 2} y1={oy} x2={STRAIN_X + STRAIN_W / 2} y2={oy + bh}
           stroke="#94a3b8" strokeWidth={0.8} />
+        {/* Zero-strain horizontal at NA depth */}
+        <line x1={STRAIN_X} y1={oy + x_s} x2={STRAIN_X + STRAIN_W} y2={oy + x_s}
+          stroke="#94a3b8" strokeWidth={0.6} />
+        {/* Compression triangle */}
+        <polygon
+          points={`${STRAIN_X + STRAIN_W / 2},${oy} ${STRAIN_X},${oy + x_s} ${STRAIN_X + STRAIN_W},${oy + x_s}`}
+          fill="#3b82f6" fillOpacity={0.28} stroke="#3b82f6" strokeWidth={0.8} />
+        {/* Tension triangle */}
+        <polygon
+          points={`${STRAIN_X + STRAIN_W / 2},${oy + bh} ${STRAIN_X},${oy + x_s} ${STRAIN_X + STRAIN_W},${oy + x_s}`}
+          fill="#f59e0b" fillOpacity={0.28} stroke="#f59e0b" strokeWidth={0.8} />
+        {/* Labels — outside triangle, never inside */}
+        <text x={STRAIN_X + STRAIN_W + 3} y={oy + 8}    fontSize={6.5} fill="#2563eb">εcu</text>
+        <text x={STRAIN_X + STRAIN_W + 3} y={oy + bh - 3} fontSize={6.5} fill="#b45309">εs</text>
 
-        {/* ── Stress block diagram ── */}
-        <text x={stressX + sideW / 2} y={oy - 6} fontSize={7.5} fill="#64748b" textAnchor="middle" fontWeight="700">Stress</text>
+        {/* ── Stress diagram ── */}
+        <text x={STRESS_X + STRESS_W / 2} y={oy - 4}
+          textAnchor="middle" fontSize={7.5} fill="#64748b" fontWeight="700">Stress</text>
         {/* Rectangular compression block */}
-        <rect x={stressX} y={oy} width={sideW} height={x_s}
-          fill="#3b82f6" fillOpacity={0.4} stroke="#3b82f6" strokeWidth={0.8} />
-        <text x={stressX + sideW / 2} y={oy + x_s / 2 + 3} fontSize={6} fill="#1d4ed8" textAnchor="middle">0.85fcd</text>
-        {/* Tension point load at bar level */}
-        <line x1={stressX} y1={barY} x2={stressX + sideW} y2={barY}
+        <rect x={STRESS_X} y={oy} width={STRESS_W} height={x_s}
+          fill="#3b82f6" fillOpacity={0.38} stroke="#3b82f6" strokeWidth={0.8} />
+        {/* 0.85fcd label: only if block is tall enough, on white bg */}
+        {x_s > 18 && (
+          <>
+            <rect x={STRESS_X + 2} y={oy + x_s / 2 - 5} width={STRESS_W - 4} height={10} fill="white" fillOpacity={0.7} />
+            <text x={STRESS_X + STRESS_W / 2} y={oy + x_s / 2 + 3}
+              textAnchor="middle" fontSize={6} fill="#1d4ed8">0.85fcd</text>
+          </>
+        )}
+        {/* Tension resultant at bar level */}
+        <line x1={STRESS_X} y1={barY} x2={STRESS_X + STRESS_W} y2={barY}
           stroke="#f59e0b" strokeWidth={1.5} />
-        <polygon points={`${stressX},${barY} ${stressX + 8},${barY - 4} ${stressX + 8},${barY + 4}`}
+        <polygon points={`${STRESS_X},${barY} ${STRESS_X + 7},${barY - 4} ${STRESS_X + 7},${barY + 4}`}
           fill="#f59e0b" />
-        <text x={stressX + sideW + 2} y={barY + 3} fontSize={6.5} fill="#b45309">fyd</text>
+        <text x={STRESS_X + STRESS_W + 3} y={barY + 4} fontSize={6.5} fill="#b45309">fyd</text>
 
-        {/* ── Legend ── */}
-        <g transform={`translate(${W - 105}, ${oy})`}>
-          <rect x={0} y={0} width={100} height={90} rx={4} fill="white" fillOpacity={0.9} stroke="#e2e8f0" strokeWidth={1} />
-          <text x={5} y={13} fontSize={8} fill="#475569" fontWeight="700">Section Properties</text>
-          <circle cx={10} cy={26} r={4} fill="#f59e0b" />
-          <text x={18} y={29} fontSize={7.5} fill="#374151">{n}T{barDia} (As={results.mainBars.As.toFixed(0)})</text>
-          <circle cx={10} cy={40} r={3} fill="#a78bfa" />
-          <text x={18} y={43} fontSize={7.5} fill="#374151">2T{Math.round(barDia * 0.6)} top</text>
-          <rect x={5} y={50} width={10} height={6} fill="none" stroke="#0ea5e9" strokeWidth={1.5} />
-          <text x={18} y={57} fontSize={7.5} fill="#374151">T{results.stirrups.dia}@{results.stirrups.spacing}</text>
-          <rect x={5} y={63} width={10} height={6} fill="#3b82f6" fillOpacity={0.3} stroke="#3b82f6" strokeWidth={0.8} />
-          <text x={18} y={70} fontSize={7.5} fill="#374151">Stress block</text>
-          <line x1={5} y1={79} x2={15} y2={79} stroke="#dc2626" strokeWidth={1} strokeDasharray="3,2" />
-          <text x={18} y={82} fontSize={7.5} fill="#374151">Neutral axis</text>
-        </g>
+        {/* ── Legend panel ── */}
+        {LEGEND_W >= 50 && (
+          <g>
+            <rect x={LEGEND_X} y={oy} width={LEGEND_W} height={Math.min(100, bh)}
+              rx={4} fill="white" stroke="#e2e8f0" strokeWidth={1} />
+            {[
+              { cy: oy + 14, r: 4,   fill: '#f59e0b', label: `${n}T${barDia}` },
+              { cy: oy + 28, r: 3,   fill: '#a78bfa', label: '2 top bars' },
+            ].map(({ cy, r, fill, label }, i) => (
+              <g key={i}>
+                <circle cx={LEGEND_X + 10} cy={cy} r={r} fill={fill} />
+                <text x={LEGEND_X + 18} y={cy + 4} fontSize={7} fill="#374151">{label}</text>
+              </g>
+            ))}
+            <rect x={LEGEND_X + 6} y={oy + 38} width={10} height={7}
+              fill="none" stroke="#0ea5e9" strokeWidth={1.5} />
+            <text x={LEGEND_X + 18} y={oy + 45} fontSize={7} fill="#374151">
+              T{results.stirrups.dia}@{results.stirrups.spacing}
+            </text>
+            <rect x={LEGEND_X + 6} y={oy + 52} width={10} height={7}
+              fill="#3b82f6" fillOpacity={0.3} stroke="#3b82f6" strokeWidth={0.8} />
+            <text x={LEGEND_X + 18} y={oy + 59} fontSize={7} fill="#374151">Comp. block</text>
+            <line x1={LEGEND_X + 6} y1={oy + 70} x2={LEGEND_X + 16} y2={oy + 70}
+              stroke="#dc2626" strokeWidth={1} strokeDasharray="3,2" />
+            <text x={LEGEND_X + 18} y={oy + 74} fontSize={7} fill="#374151">Neutral axis</text>
+          </g>
+        )}
 
-        {/* ── Bar label below ── */}
-        <text x={ox + bw / 2} y={oy + bh + 18} textAnchor="middle" fontSize={8.5} fill="#1e40af" fontWeight="700">
-          {n}T{barDia}  As,prov = {results.mainBars.As.toFixed(0)} mm²
+        {/* ── Bottom data row — below section, guaranteed clear of cover callout ── */}
+        <rect x={ox} y={oy + bh + 26} width={bw} height={13} rx={2} fill="#f8fafc" />
+        <text x={ox + bw / 2} y={oy + bh + 36}
+          textAnchor="middle" fontSize={7.5} fill="#1e40af" fontWeight="700">
+          {n}T{barDia} · As={results.mainBars.As.toFixed(0)} mm²
         </text>
-        <text x={ox + bw / 2} y={oy + bh + 30} textAnchor="middle" fontSize={7.5} fill="#0ea5e9">
-          d = {d.toFixed(0)} mm   x = {x_mm.toFixed(0)} mm   x/d = {d > 0 ? (x_mm / d).toFixed(2) : '—'}
+        {/* d / x line further below */}
+        <text x={ox + bw / 2} y={oy + bh + 50}
+          textAnchor="middle" fontSize={7} fill="#475569">
+          d={d.toFixed(0)} mm · x={x_mm.toFixed(0)} mm · x/d={d > 0 ? (x_mm / d).toFixed(2) : '—'}
         </text>
       </svg>
 
-      {/* Elevation / load diagram */}
+      {/* ── Elevation / loading diagram ── */}
       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mt-1">Elevation & Loading</p>
-      <svg width="100%" viewBox="0 0 420 90" className="w-full border border-slate-200 rounded-lg bg-white">
+      <svg width="100%" viewBox="0 0 460 96" className="w-full border border-slate-200 rounded-lg bg-white">
         <defs>
-          <marker id="udlArrow" markerWidth={5} markerHeight={5} refX={2.5} refY={5} orient="auto">
+          <marker id="bsUdl" markerWidth={5} markerHeight={5} refX={2.5} refY={5} orient="auto">
             <path d="M0,0 L2.5,5 L5,0 Z" fill="#3b82f6" />
-          </marker>
-          <marker id="reactArrow" markerWidth={6} markerHeight={6} refX={3} refY={0} orient="auto">
-            <path d="M0,0 L3,6 L6,0 Z" fill="#16a34a" />
           </marker>
         </defs>
 
-        {/* UDL block */}
-        <rect x={28} y={10} width={364} height={14} fill="#3b82f6" fillOpacity={0.15} stroke="#3b82f6" strokeWidth={0.8} />
-        <text x={210} y={20} textAnchor="middle" fontSize={8.5} fill="#2563eb" fontWeight="700">
-          wEd = {inputs.deadLoad !== undefined ? (inputs.deadLoad + inputs.liveLoad).toFixed(1) : '—'} kN/m
+        {/* Span label — top strip, clear of everything ── */}
+        <text x={230} y={10} textAnchor="middle" fontSize={8} fill="#64748b" fontWeight="600">
+          L = {inputs.span} m
+        </text>
+        <line x1={32} y1={13} x2={428} y2={13} stroke="#94a3b8" strokeWidth={0.5} strokeDasharray="3,3" />
+
+        {/* UDL block (16–26) */}
+        <rect x={32} y={16} width={396} height={10} fill="#dbeafe" stroke="#93c5fd" strokeWidth={0.7} />
+        <text x={230} y={24} textAnchor="middle" fontSize={7.5} fill="#2563eb" fontWeight="700">
+          wEd = {(inputs.deadLoad + inputs.liveLoad).toFixed(1)} kN/m
         </text>
 
-        {/* UDL arrows */}
-        {Array.from({ length: 12 }, (_, i) => {
-          const x = 28 + (i + 0.5) * (364 / 12);
-          return <line key={i} x1={x} y1={24} x2={x} y2={45} stroke="#3b82f6" strokeWidth={1.2} markerEnd="url(#udlArrow)" />;
+        {/* UDL arrows (26–46) */}
+        {Array.from({ length: 13 }, (_, i) => {
+          const x = 32 + (i + 0.5) * (396 / 13);
+          return <line key={i} x1={x} y1={26} x2={x} y2={44} stroke="#3b82f6" strokeWidth={1.1} markerEnd="url(#bsUdl)" />;
         })}
 
-        {/* Beam */}
-        <rect x={28} y={46} width={364} height={16} rx={2} fill="#475569" />
+        {/* Beam (46–60) */}
+        <rect x={32} y={46} width={396} height={14} rx={2} fill="#475569" />
 
-        {/* Supports */}
-        <polygon points="28,62 18,78 38,78" fill="#334155" />
-        <line x1={12} y1={78} x2={44} y2={78} stroke="#334155" strokeWidth={2} />
+        {/* Quarter span ticks ON the beam — labels above beam, below UDL, in the gap (26–46) */}
+        {[0.25, 0.5, 0.75].map((t, i) => {
+          const x = 32 + t * 396;
+          return (
+            <g key={i}>
+              {/* Tick through beam */}
+              <line x1={x} y1={46} x2={x} y2={60} stroke="#94a3b8" strokeWidth={0.5} strokeDasharray="2,2" />
+              {/* Label above arrows — guaranteed space at y=14 is taken; use space within arrow zone at top */}
+            </g>
+          );
+        })}
+
+        {/* Supports (60–76) */}
+        <polygon points="32,60 22,76 42,76" fill="#334155" />
+        <line x1={16} y1={76} x2={48} y2={76} stroke="#334155" strokeWidth={2} />
         {inputs.supportType === 'simply-supported' && (
           <>
-            <polygon points="392,62 382,78 402,78" fill="#64748b" />
-            <circle cx={386} cy={81} r={3} fill="none" stroke="#64748b" strokeWidth={1.5} />
-            <circle cx={398} cy={81} r={3} fill="none" stroke="#64748b" strokeWidth={1.5} />
-            <line x1={376} y1={84} x2={408} y2={84} stroke="#64748b" strokeWidth={2} />
+            <polygon points="428,60 418,76 438,76" fill="#64748b" />
+            <circle cx={422} cy={79} r={3} fill="none" stroke="#64748b" strokeWidth={1.5} />
+            <circle cx={434} cy={79} r={3} fill="none" stroke="#64748b" strokeWidth={1.5} />
+            <line x1={412} y1={82} x2={444} y2={82} stroke="#64748b" strokeWidth={2} />
           </>
         )}
 
-        {/* Reactions */}
-        <line x1={28} y1={78} x2={28} y2={90} stroke="#16a34a" strokeWidth={2} />
-        <polygon points="28,62 24,74 32,74" fill="#16a34a" />
-        <text x={28} y={90} textAnchor="middle" fontSize={7} fill="#15803d" fontWeight="700">RA</text>
+        {/* Reactions — pushed to bottom (76–90), labels at y=92 clear of support hatching */}
+        <line x1={32} y1={82} x2={32} y2={92} stroke="#16a34a" strokeWidth={1.5} />
+        <text x={32} y={96} textAnchor="middle" fontSize={7} fill="#15803d" fontWeight="700">RA</text>
         {inputs.supportType === 'simply-supported' && (
           <>
-            <line x1={392} y1={78} x2={392} y2={90} stroke="#16a34a" strokeWidth={2} />
-            <polygon points="392,62 388,74 396,74" fill="#16a34a" />
-            <text x={392} y={90} textAnchor="middle" fontSize={7} fill="#15803d" fontWeight="700">RB</text>
+            <line x1={428} y1={82} x2={428} y2={92} stroke="#16a34a" strokeWidth={1.5} />
+            <text x={428} y={96} textAnchor="middle" fontSize={7} fill="#15803d" fontWeight="700">RB</text>
           </>
         )}
-
-        {/* Span annotation */}
-        <line x1={28} y1={55} x2={392} y2={55} stroke="#94a3b8" strokeWidth={0.6} strokeDasharray="4,2" />
-        <text x={210} y={53} textAnchor="middle" fontSize={8} fill="#64748b">L = {inputs.span} m</text>
-
-        {/* Quarter span ticks */}
-        {[0.25, 0.5, 0.75].map((t, i) => (
-          <g key={i}>
-            <line x1={28 + t * 364} y1={46} x2={28 + t * 364} y2={62} stroke="#94a3b8" strokeWidth={0.6} strokeDasharray="2,2" />
-            <text x={28 + t * 364} y={44} textAnchor="middle" fontSize={6.5} fill="#94a3b8">{(t * inputs.span).toFixed(1)}m</text>
-          </g>
-        ))}
       </svg>
     </div>
   );
