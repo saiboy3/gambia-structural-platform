@@ -60,9 +60,6 @@ export default function UtilisationBars({ checks, title }: Props) {
       {checks.map((chk, i) => {
         const raw = pct(chk);
         const u = Math.min(raw, 150);
-        const passes = chk.invert
-          ? chk.demand >= chk.capacity
-          : chk.demand <= chk.capacity;
         const c = colours(raw);
 
         // Status label
