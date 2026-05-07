@@ -9,6 +9,7 @@ import Beam3D from '../visuals/ThreeD/Beam3D';
 import BMDDiagram from '../visuals/BMDDiagram';
 import UtilisationBars from '../visuals/UtilisationBars';
 import type { UtilCheck } from '../visuals/UtilisationBars';
+import OptimiseSuggestion from '../ui/OptimiseSuggestion';
 import CalcSheet from '../ui/CalcSheet';
 import SaveDesignPanel from '../ui/SaveDesignPanel';
 import ProjectSelector from '../projects/ProjectSelector';
@@ -73,6 +74,8 @@ function buildChecks(
       unit: 'kN',
       note: 'VEd / VRd',
       hint: 'Widen the web or increase depth to raise concrete shear capacity.',
+      // When shear passes the check shows 95 % (display artefact of binary formula) — skip in optimiser
+      skipOptimise: res.shearOK,
       actions: [
         { label: `+50 mm width (→ ${inp.width + 50} mm)`, onClick: () => runWith({ width: inp.width + 50 }) },
         { label: `+50 mm depth (→ ${inp.depth + 50} mm)`, onClick: () => runWith({ depth: inp.depth + 50 }) },
@@ -110,10 +113,13 @@ export default function BeamDesign() {
   const [show3D, setShow3D] = useState(false);
   const [mode, setMode]     = useState<'standard' | 'guided'>('standard');
   const [activeTab, setActiveTab] = useState<'diagram' | 'section' | 'utilisation'>('diagram');
+  const [suggestion, setSuggestion] = useState<{ depth: number; width: number } | null>(null);
   const { factors } = useBuildingCode();
 
-  const set = (key: keyof BeamInputs, val: string | number) =>
+  const set = (key: keyof BeamInputs, val: string | number) => {
     setInp(prev => ({ ...prev, [key]: val }));
+    setSuggestion(null); // clear suggestion when user edits inputs manually
+  };
   const setMat = (c: string, r: string) =>
     setInp(prev => ({ ...prev, material: getMaterial(c as ConcreteGrade, r as RebarGrade) }));
   const run = (overrideInp?: BeamInputs) => {
@@ -121,6 +127,7 @@ export default function BeamDesign() {
     if (overrideInp) setInp(overrideInp);
     setRes(designBeam(target, factors));
     setMode('standard');
+    setSuggestion(null);
   };
 
   // Called by utilisation quick-action buttons — patches inputs and immediately recalculates
@@ -128,6 +135,35 @@ export default function BeamDesign() {
     const next = { ...inp, ...patch };
     setInp(next);
     setRes(designBeam(next, factors));
+    setSuggestion(null);
+  };
+
+  // Finds the minimum depth/width that puts geometry-controllable checks ≤ 80 %
+  // Crack width is excluded — it requires bar spacing adjustment, not section sizing
+  const optimise = () => {
+    if (!res) return;
+    const calcPct = (c: UtilCheck) =>
+      c.capacity === 0 ? 0 : c.invert
+        ? (c.capacity / c.demand) * 100
+        : (c.demand / c.capacity) * 100;
+    // Bending, steel area, deflection → increase depth
+    // Shear → increase width
+    const depthSensitive = (label: string) =>
+      label.includes('Bending') || label.includes('Flexural') || label.includes('depth');
+    let depth = inp.depth;
+    let width = inp.width;
+    for (let i = 0; i < 80; i++) {
+      const testInp = { ...inp, depth, width };
+      const testRes = designBeam(testInp, factors);
+      const checks = buildChecks(testInp, testRes, factors, () => {});
+      // Exclude crack width (bar layout) and binary checks flagged skipOptimise
+      const failing = checks.filter(c => calcPct(c) > 80 && !c.label.includes('Crack') && !c.skipOptimise);
+      if (failing.length === 0) break;
+      const worst = failing.reduce((a, b) => calcPct(a) > calcPct(b) ? a : b);
+      if (depthSensitive(worst.label)) depth = Math.ceil((depth + 25) / 25) * 25;
+      else width = Math.ceil((width + 25) / 25) * 25;
+    }
+    setSuggestion({ depth, width });
   };
 
   const wEd = 1.35 * inp.deadLoad + 1.5 * inp.liveLoad;
@@ -410,9 +446,30 @@ export default function BeamDesign() {
             )}
 
             {activeTab === 'utilisation' && (
-              res
-                ? <UtilisationBars checks={buildChecks(inp, res, factors, runWith)} title="Check utilisation" />
-                : <p className="text-sm text-slate-400 text-center py-8">Run design first</p>
+              res ? (
+                <>
+                  <UtilisationBars checks={buildChecks(inp, res, factors, runWith)} title="Check utilisation" />
+                  {!suggestion && (
+                    <button onClick={optimise}
+                      className="mt-3 w-full text-xs font-semibold text-blue-600 border border-blue-200 bg-blue-50 hover:bg-blue-100 py-2 rounded-xl transition-colors">
+                      Suggest optimal parameters
+                    </button>
+                  )}
+                  {suggestion && (
+                    <OptimiseSuggestion
+                      rows={[
+                        { label: 'Beam depth', current: inp.depth, suggested: suggestion.depth, unit: 'mm' },
+                        { label: 'Beam width', current: inp.width, suggested: suggestion.width, unit: 'mm' },
+                      ]}
+                      note="Minimum section for bending, shear and deflection. If crack width still flags, reduce bar spacing or increase bar count in the input panel."
+                      onApply={() => { runWith(suggestion); setSuggestion(null); }}
+                      onDismiss={() => setSuggestion(null)}
+                    />
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-slate-400 text-center py-8">Run design first</p>
+              )
             )}
           </Card>
         </div>

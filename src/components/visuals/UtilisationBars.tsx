@@ -16,7 +16,8 @@ export interface UtilCheck {
   note?: string;        // formula, e.g. "MEd / MRd"
   hint?: string;        // actionable tip — shown below the bar
   invert?: boolean;     // true when demand > capacity = PASS (e.g. As,prov > As,req)
-  actions?: QuickAction[];  // one-click parameter tweaks — shown when utilisation > 60 %
+  actions?: QuickAction[];     // one-click parameter tweaks — shown when utilisation > 60 %
+  skipOptimise?: boolean;      // exclude from "suggest optimal" — use for binary checks that always read ~95 %
 }
 
 function pct(check: UtilCheck) {

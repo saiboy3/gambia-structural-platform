@@ -10,6 +10,7 @@ import SaveDesignPanel from '../ui/SaveDesignPanel';
 import ProjectSelector from '../projects/ProjectSelector';
 import { designPile } from '../../utils/pileCalculations';
 import type { PileInputs, SoilLayer } from '../../utils/pileCalculations';
+import OptimiseSuggestion from '../ui/OptimiseSuggestion';
 
 const defaultLayers: SoilLayer[] = [
   { thickness: 3, soilType: 'soft-clay', cu: 25, gamma: 17 },
@@ -79,8 +80,9 @@ export default function PileDesign() {
   const [inp, setInp] = useState<PileInputs>(defaultInp);
   const [res, setRes] = useState<ReturnType<typeof designPile> | null>(null);
   const [activeTab, setActiveTab] = useState<'profile' | 'utilisation'>('profile');
+  const [suggestion, setSuggestion] = useState<{ length: number; diameter: number } | null>(null);
 
-  const set = (k: keyof PileInputs, v: unknown) => setInp(p => ({ ...p, [k]: v }));
+  const set = (k: keyof PileInputs, v: unknown) => { setInp(p => ({ ...p, [k]: v })); setSuggestion(null); };
 
   const updateLayer = (i: number, k: keyof SoilLayer, v: unknown) =>
     setInp(p => {
@@ -98,6 +100,30 @@ export default function PileDesign() {
     const next = { ...inp, ...patch };
     setInp(next);
     setRes(designPile(next));
+    setSuggestion(null);
+  };
+
+  // Pile optimiser: find minimum length+dia where Qa covers the applied load
+  // (all checks < 80 % means reasonable reserve over FoS-adjusted capacity)
+  const optimise = () => {
+    if (!res) return;
+    let length = inp.length;
+    let diameter = inp.diameter;
+    for (let i = 0; i < 60; i++) {
+      const testRes = designPile({ ...inp, length, diameter });
+      // Both Qs and Qb are contributions; we want Qa well above any applied load.
+      // Use ratio Qu/Qa >= FoS with some headroom — aim for Qa at least 20% above Qu/FoS*0.8
+      const Qa = testRes.Qa;
+      const Qu = testRes.Qu;
+      // Utilisation as fraction of Qu that Qa represents (want util < 80 %)
+      const shaftUtil = Qu > 0 ? (testRes.Qs / Qu) * 100 : 0;
+      const bearUtil  = Qu > 0 ? (testRes.Qb / Qu) * 100 : 0;
+      if (shaftUtil <= 80 && bearUtil <= 80 && Qa > 0) break;
+      // Prioritise length (cheaper than diameter increase)
+      if (shaftUtil >= bearUtil) length = Math.ceil((length + 1) / 1) * 1;
+      else diameter = Math.ceil((diameter + 50) / 50) * 50;
+    }
+    setSuggestion({ length, diameter });
   };
 
   const checks: UtilCheck[] = res ? [
@@ -283,9 +309,30 @@ export default function PileDesign() {
             </>
           )}
           {activeTab === 'utilisation' && (
-            res
-              ? <UtilisationBars checks={checks} title="Capacity breakdown" />
-              : <p className="text-sm text-slate-400 text-center py-8">Run calculation first</p>
+            res ? (
+              <>
+                <UtilisationBars checks={checks} title="Capacity breakdown" />
+                {!suggestion && (
+                  <button onClick={optimise}
+                    className="mt-3 w-full text-xs font-semibold text-blue-600 border border-blue-200 bg-blue-50 hover:bg-blue-100 py-2 rounded-xl transition-colors">
+                    Suggest optimal parameters
+                  </button>
+                )}
+                {suggestion && (
+                  <OptimiseSuggestion
+                    rows={[
+                      { label: 'Pile length', current: inp.length, suggested: suggestion.length, unit: 'm' },
+                      { label: 'Pile diameter', current: inp.diameter, suggested: suggestion.diameter, unit: 'mm' },
+                    ]}
+                    note="Minimum geometry for adequate capacity reserve. Confirm pile schedule with geotechnical report."
+                    onApply={() => { runWith(suggestion); setSuggestion(null); }}
+                    onDismiss={() => setSuggestion(null)}
+                  />
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-slate-400 text-center py-8">Run calculation first</p>
+            )
           )}
         </Card>
       </div>

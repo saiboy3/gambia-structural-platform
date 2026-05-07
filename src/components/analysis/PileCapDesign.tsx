@@ -11,6 +11,7 @@ import ProjectSelector from '../projects/ProjectSelector';
 import { getMaterial } from '../../utils/materials';
 import { designPileCap } from '../../utils/pileCapCalculations';
 import { useBuildingCode } from '../../context/BuildingCodeContext';
+import OptimiseSuggestion from '../ui/OptimiseSuggestion';
 import type { ConcreteGrade, RebarGrade } from '../../types/structural';
 import type { PileCapInputs, PileArrangement } from '../../utils/pileCapCalculations';
 
@@ -78,9 +79,10 @@ export default function PileCapDesign() {
   const [inp, setInp] = useState<PileCapInputs>(defaultInp);
   const [res, setRes] = useState<ReturnType<typeof designPileCap> | null>(null);
   const [activeTab, setActiveTab] = useState<'plan' | 'utilisation'>('plan');
+  const [suggestion, setSuggestion] = useState<{ capThickness: number } | null>(null);
   const { factors } = useBuildingCode();
 
-  const set = (k: keyof PileCapInputs, v: unknown) => setInp(p => ({ ...p, [k]: v }));
+  const set = (k: keyof PileCapInputs, v: unknown) => { setInp(p => ({ ...p, [k]: v })); setSuggestion(null); };
   const setMat = (c: string, r: string) =>
     setInp(p => ({ ...p, material: getMaterial(c as ConcreteGrade, r as RebarGrade) }));
 
@@ -88,6 +90,20 @@ export default function PileCapDesign() {
     const next = { ...inp, ...patch };
     setInp(next);
     setRes(designPileCap(next, factors));
+    setSuggestion(null);
+  };
+
+  const optimise = () => {
+    if (!res) return;
+    let capThickness = inp.capThickness;
+    for (let i = 0; i < 60; i++) {
+      const testRes = designPileCap({ ...inp, capThickness }, factors);
+      const punchUtil = testRes.vRdc > 0 ? (testRes.vEd_col / testRes.vRdc) * 100 : 200;
+      const steelUtil = testRes.bars.As > 0 ? (testRes.As_req / testRes.bars.As) * 100 : 200;
+      if (punchUtil <= 80 && steelUtil <= 80) break;
+      capThickness = Math.ceil((capThickness + 50) / 50) * 50;
+    }
+    setSuggestion({ capThickness });
   };
 
   const checks: UtilCheck[] = res ? [
@@ -234,9 +250,29 @@ export default function PileCapDesign() {
             />
           )}
           {activeTab === 'utilisation' && (
-            res
-              ? <UtilisationBars checks={checks} title="Capacity checks" />
-              : <p className="text-sm text-slate-400 text-center py-8">Run design first</p>
+            res ? (
+              <>
+                <UtilisationBars checks={checks} title="Capacity checks" />
+                {!suggestion && (
+                  <button onClick={optimise}
+                    className="mt-3 w-full text-xs font-semibold text-blue-600 border border-blue-200 bg-blue-50 hover:bg-blue-100 py-2 rounded-xl transition-colors">
+                    Suggest optimal parameters
+                  </button>
+                )}
+                {suggestion && (
+                  <OptimiseSuggestion
+                    rows={[
+                      { label: 'Cap thickness', current: inp.capThickness, suggested: suggestion.capThickness, unit: 'mm' },
+                    ]}
+                    note="Minimum depth to satisfy punching shear and flexure. Consider construction tolerance when setting formwork."
+                    onApply={() => { runWith(suggestion); setSuggestion(null); }}
+                    onDismiss={() => setSuggestion(null)}
+                  />
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-slate-400 text-center py-8">Run design first</p>
+            )
           )}
           {/* Notes */}
           <div className="mt-3 space-y-1 text-xs">

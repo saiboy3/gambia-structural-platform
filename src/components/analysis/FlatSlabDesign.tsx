@@ -10,6 +10,7 @@ import SaveDesignPanel from '../ui/SaveDesignPanel';
 import ProjectSelector from '../projects/ProjectSelector';
 import { getMaterial } from '../../utils/materials';
 import { designFlatSlab } from '../../utils/flatSlabCalculations';
+import OptimiseSuggestion from '../ui/OptimiseSuggestion';
 import { useBuildingCode } from '../../context/BuildingCodeContext';
 import type { ConcreteGrade, RebarGrade } from '../../types/structural';
 import type { FlatSlabInputs } from '../../utils/flatSlabCalculations';
@@ -119,17 +120,37 @@ export default function FlatSlabDesign() {
   const [inp, setInp] = useState<FlatSlabInputs>(defaultInputs);
   const [res, setRes] = useState<ReturnType<typeof designFlatSlab> | null>(null);
   const [activeTab, setActiveTab] = useState<'plan' | 'utilisation'>('plan');
+  const [suggestion, setSuggestion] = useState<{ thickness: number } | null>(null);
   const { factors } = useBuildingCode();
 
-  const set = (k: keyof FlatSlabInputs, v: string | number | boolean) =>
+  const set = (k: keyof FlatSlabInputs, v: string | number | boolean) => {
     setInp(p => ({ ...p, [k]: v }));
+    setSuggestion(null);
+  };
   const setMat = (c: string, r: string) =>
     setInp(p => ({ ...p, material: getMaterial(c as ConcreteGrade, r as RebarGrade) }));
 
   const runWith = (patch: Partial<FlatSlabInputs>) => {
     const next = { ...inp, ...patch };
     setInp(next);
+    setSuggestion(null);
     setRes(designFlatSlab(next, factors));
+  };
+
+  const optimise = () => {
+    if (!res) return;
+    const depthLimit = inp.interiorCol ? 31 : 28;
+    let thickness = inp.thickness;
+    for (let i = 0; i < 60; i++) {
+      const testRes = designFlatSlab({ ...inp, thickness }, factors);
+      const punchUtil = testRes.vRdc > 0 ? (testRes.vEd / testRes.vRdc) * 100 : 200;
+      const topUtil   = testRes.bars_cs_top.As > 0 ? (testRes.As_cs_top / testRes.bars_cs_top.As) * 100 : 200;
+      const botUtil   = testRes.bars_cs_bot.As > 0 ? (testRes.As_cs_bot / testRes.bars_cs_bot.As) * 100 : 200;
+      const spanUtil  = testRes.spanRatio > 0 ? (testRes.spanRatio / depthLimit) * 100 : 200;
+      if (punchUtil <= 80 && topUtil <= 80 && botUtil <= 80 && spanUtil <= 80) break;
+      thickness = Math.ceil((thickness + 25) / 25) * 25;
+    }
+    setSuggestion({ thickness });
   };
 
   const checks: UtilCheck[] = res ? [
@@ -309,9 +330,29 @@ export default function FlatSlabDesign() {
             </>
           )}
           {activeTab === 'utilisation' && (
-            res
-              ? <UtilisationBars checks={checks} title="Capacity checks" />
-              : <p className="text-sm text-slate-400 text-center py-8">Run design first</p>
+            res ? (
+              <>
+                <UtilisationBars checks={checks} title="Capacity checks" />
+                {!suggestion && (
+                  <button onClick={optimise}
+                    className="mt-3 w-full text-xs font-semibold text-blue-600 border border-blue-200 bg-blue-50 hover:bg-blue-100 py-2 rounded-xl transition-colors">
+                    Suggest optimal parameters
+                  </button>
+                )}
+                {suggestion && (
+                  <OptimiseSuggestion
+                    rows={[
+                      { label: 'Slab thickness', current: inp.thickness, suggested: suggestion.thickness, unit: 'mm' },
+                    ]}
+                    note="Minimum thickness satisfying punching shear, flexure, and span/depth limits."
+                    onApply={() => { runWith(suggestion); setSuggestion(null); }}
+                    onDismiss={() => setSuggestion(null)}
+                  />
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-slate-400 text-center py-8">Run design first</p>
+            )
           )}
         </Card>
       </div>

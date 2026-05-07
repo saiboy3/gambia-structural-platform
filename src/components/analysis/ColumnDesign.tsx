@@ -8,6 +8,7 @@ import ColumnSection from '../visuals/ColumnSection';
 import Column3D from '../visuals/ThreeD/Column3D';
 import UtilisationBars from '../visuals/UtilisationBars';
 import type { UtilCheck } from '../visuals/UtilisationBars';
+import OptimiseSuggestion from '../ui/OptimiseSuggestion';
 import CalcSheet from '../ui/CalcSheet';
 import SaveDesignPanel from '../ui/SaveDesignPanel';
 import ProjectSelector from '../projects/ProjectSelector';
@@ -63,11 +64,13 @@ export default function ColumnDesign() {
   const [res, setRes] = useState<ColumnResults | null>(null);
   const [show3D, setShow3D] = useState(false);
   const [activeTab, setActiveTab] = useState<'section' | 'pm' | 'utilisation'>('pm');
+  const [suggestion, setSuggestion] = useState<{ b: number; h: number } | null>(null);
   const { factors } = useBuildingCode();
 
-  const set = (key: keyof ColumnInputs, val: string | number | boolean) =>
+  const set = (key: keyof ColumnInputs, val: string | number | boolean) => {
     setInp(prev => ({ ...prev, [key]: val }));
-
+    setSuggestion(null);
+  };
   const setMat = (concrete: ConcreteGrade, rebar: RebarGrade) =>
     setInp(prev => ({ ...prev, material: getMaterial(concrete, rebar) }));
 
@@ -75,6 +78,27 @@ export default function ColumnDesign() {
     const next = { ...inp, ...patch };
     setInp(next);
     setRes(designColumn(next, factors));
+    setSuggestion(null);
+  };
+
+  const optimise = () => {
+    if (!res) return;
+    const calcPct = (c: UtilCheck) =>
+      c.capacity === 0 ? 0 : c.invert
+        ? (c.capacity / c.demand) * 100
+        : (c.demand / c.capacity) * 100;
+    let b = inp.b, h = inp.h;
+    for (let i = 0; i < 80; i++) {
+      const testInp = { ...inp, b, h };
+      const testRes = designColumn(testInp, factors);
+      const checks = buildColChecks(testInp, testRes, () => {});
+      const failing = checks.filter(c => c.label !== 'Max steel (4% Ac)' && calcPct(c) > 80);
+      if (failing.length === 0) break;
+      // Grow both dimensions equally to keep section proportions
+      b = Math.ceil((b + 25) / 25) * 25;
+      h = Math.ceil((h + 25) / 25) * 25;
+    }
+    setSuggestion({ b, h });
   };
 
   return (
@@ -212,9 +236,30 @@ export default function ColumnDesign() {
         )}
 
         {activeTab === 'utilisation' && (
-          res
-            ? <UtilisationBars checks={buildColChecks(inp, res, runWith)} title="Capacity checks" />
-            : <p className="text-sm text-slate-400 text-center py-8">Run design first</p>
+          res ? (
+            <>
+              <UtilisationBars checks={buildColChecks(inp, res, runWith)} title="Capacity checks" />
+              {!suggestion && (
+                <button onClick={optimise}
+                  className="mt-3 w-full text-xs font-semibold text-blue-600 border border-blue-200 bg-blue-50 hover:bg-blue-100 py-2 rounded-xl transition-colors">
+                  Suggest optimal parameters
+                </button>
+              )}
+              {suggestion && (
+                <OptimiseSuggestion
+                  rows={[
+                    { label: 'Column width (b)', current: inp.b, suggested: suggestion.b, unit: 'mm' },
+                    { label: 'Column depth (h)', current: inp.h, suggested: suggestion.h, unit: 'mm' },
+                  ]}
+                  note="Minimum section size. In practice round to the nearest 50 mm construction increment."
+                  onApply={() => { runWith(suggestion); setSuggestion(null); }}
+                  onDismiss={() => setSuggestion(null)}
+                />
+              )}
+            </>
+          ) : (
+            <p className="text-sm text-slate-400 text-center py-8">Run design first</p>
+          )
         )}
       </Card>
     </div>
