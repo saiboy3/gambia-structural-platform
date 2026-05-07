@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Layers, Columns3, Square, Hammer, FileText, Menu, X,
   ChevronRight, Calculator, ChevronDown, Zap, AlertTriangle, Footprints,
   BookOpen, Ruler, FolderOpen, ClipboardCheck, FlaskConical,
-  DollarSign, Users, ImageIcon, LogOut, Milestone, Waves, Bridge,
+  DollarSign, Users, ImageIcon, LogOut, Milestone, Waves,
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import BeamDesign from './components/analysis/BeamDesign';
@@ -123,7 +123,7 @@ const NAV_GROUPS: NavGroup[] = [
   { label: 'Transportation', items: [
     { id: 'pavement', label: 'Road Pavement', icon: Milestone },
     { id: 'culvert', label: 'Box Culvert', icon: Waves },
-    { id: 'bridge-beam', label: 'Bridge Beam', icon: Bridge },
+    { id: 'bridge-beam', label: 'Bridge Beam', icon: Layers },
     { id: 'bridge-abutment', label: 'Bridge Abutment', icon: Hammer },
   ]},
   { label: 'Projects & QA', items: [
