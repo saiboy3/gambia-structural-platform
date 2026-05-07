@@ -17,6 +17,9 @@ import FlatSlabDesign from './components/analysis/FlatSlabDesign';
 import PileDesign from './components/analysis/PileDesign';
 import PileCapDesign from './components/analysis/PileCapDesign';
 import MasonryWallDesign from './components/analysis/MasonryWallDesign';
+import PortalFrame from './components/analysis/PortalFrame';
+import CompositeBeam from './components/analysis/CompositeBeam';
+import SteelConnection from './components/analysis/SteelConnection';
 import BOQ from './components/reports/BOQ';
 import LoadCalculatorPage from './components/analysis/LoadCalculatorPage';
 import QuickDesign from './components/analysis/QuickDesign';
@@ -42,6 +45,7 @@ type Page =
   | 'dashboard' | 'quick' | 'loads' | 'wizard'
   | 'beam' | 'column' | 'slab' | 'flat-slab' | 'foundation' | 'retaining-wall' | 'staircase' | 'steel'
   | 'pile' | 'pile-cap' | 'masonry-wall'
+  | 'portal-frame' | 'composite-beam' | 'steel-connection'
   | 'boq' | 'projects' | 'project-detail'
   | 'cube-tests' | 'checklists' | 'site-investigation'
   | 'code-reference' | 'unit-converter' | 'worked-examples'
@@ -56,6 +60,9 @@ const pageTitle: Record<Page, string> = {
   staircase: 'RC Staircase Design', steel: 'Steel Member Design',
   pile: 'Pile Capacity Design', 'pile-cap': 'Pile Cap Design',
   'masonry-wall': 'Masonry Wall Design (EC6)',
+  'portal-frame': 'Steel Portal Frame (EC3)',
+  'composite-beam': 'Composite Beam Design (EC4)',
+  'steel-connection': 'Steel Connection Design (EC3-1-8)',
   boq: 'Bill of Quantities', projects: 'Project Register', 'project-detail': 'Project Detail',
   'cube-tests': 'Concrete Cube Test Log', checklists: 'Inspection Checklists',
   'site-investigation': 'Site Investigation Log',
@@ -100,6 +107,9 @@ const NAV_GROUPS: NavGroup[] = [
   ]},
   { label: 'Steel Design', items: [
     { id: 'steel', label: 'Steel Member', icon: Layers },
+    { id: 'portal-frame', label: 'Portal Frame', icon: Layers },
+    { id: 'composite-beam', label: 'Composite Beam', icon: Layers },
+    { id: 'steel-connection', label: 'Steel Connections', icon: Layers },
   ]},
   { label: 'Projects & QA', items: [
     { id: 'projects', label: 'Project Register', icon: FolderOpen },
@@ -261,6 +271,9 @@ function AppInner() {
           {page === 'pile-cap'         && <PileCapDesign />}
           {page === 'masonry-wall'     && <MasonryWallDesign />}
           {page === 'steel'            && <SteelDesign />}
+          {page === 'portal-frame'     && <PortalFrame />}
+          {page === 'composite-beam'   && <CompositeBeam />}
+          {page === 'steel-connection' && <SteelConnection />}
           {page === 'boq'              && <BOQ />}
           {page === 'projects'         && <ProjectList onSelect={goToProject} />}
           {page === 'project-detail'   && detailProjectId &&
