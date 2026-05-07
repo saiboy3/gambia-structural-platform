@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import Card from '../ui/Card';
 import InputField, { SelectField } from '../ui/InputField';
+import HelpTooltip from '../ui/HelpTooltip';
 import Badge from '../ui/Badge';
 import ResultRow from '../ui/ResultRow';
 import ColumnSection from '../visuals/ColumnSection';
 import Column3D from '../visuals/ThreeD/Column3D';
+import UtilisationBars from '../visuals/UtilisationBars';
+import type { UtilCheck } from '../visuals/UtilisationBars';
 import CalcSheet from '../ui/CalcSheet';
 import SaveDesignPanel from '../ui/SaveDesignPanel';
 import ProjectSelector from '../projects/ProjectSelector';
@@ -22,10 +25,20 @@ const defaultInputs: ColumnInputs = {
   braced: true,
 };
 
+function buildColChecks(inp: ColumnInputs, res: ColumnResults): UtilCheck[] {
+  return [
+    { label: 'Axial capacity', demand: inp.Ned, capacity: res.capacity, unit: 'kN', note: 'NEd / NRd' },
+    { label: 'As provided', demand: res.mainBars.As, capacity: res.AsReq, unit: 'mm²', note: 'As,prov / As,req', invert: true },
+    { label: 'Min steel', demand: res.mainBars.As, capacity: res.minAs, unit: 'mm²', note: 'As,prov / As,min', invert: true },
+    { label: 'Max steel', demand: res.mainBars.As, capacity: res.maxAs, unit: 'mm²', note: 'As,prov / As,max' },
+  ];
+}
+
 export default function ColumnDesign() {
   const [inp, setInp] = useState<ColumnInputs>(defaultInputs);
   const [res, setRes] = useState<ColumnResults | null>(null);
   const [show3D, setShow3D] = useState(false);
+  const [activeTab, setActiveTab] = useState<'section' | 'pm' | 'utilisation'>('pm');
   const { factors } = useBuildingCode();
 
   const set = (key: keyof ColumnInputs, val: string | number | boolean) =>
@@ -50,13 +63,37 @@ export default function ColumnDesign() {
               { value: 'square', label: 'Square' },
               { value: 'circular', label: 'Circular' },
             ]} />
-          <InputField label="Width / Dia (b)" unit="mm" value={inp.b} onChange={v => set('b', +v)} min={200} />
+          <div>
+            <div className="flex items-center gap-0.5">
+              <label className="text-xs font-medium text-slate-600">Width / Dia (b)</label>
+              <HelpTooltip title="Column width" text="The smaller cross-section dimension. For circular columns this is the diameter." typical="250–500 mm for most building columns" />
+            </div>
+            <InputField label="" unit="mm" value={inp.b} onChange={v => set('b', +v)} min={200} />
+          </div>
           <InputField label="Depth (h)" unit="mm" value={inp.h} onChange={v => set('h', +v)} min={200} />
           <InputField label="Cover" unit="mm" value={inp.cover} onChange={v => set('cover', +v)} min={25} />
-          <InputField label="Clear Height" unit="m" value={inp.height} onChange={v => set('height', +v)} min={1} />
-          <InputField label="NEd (axial)" unit="kN" value={inp.Ned} onChange={v => set('Ned', +v)} min={0} />
-          <InputField label="MEdy" unit="kNm" value={inp.Medy} onChange={v => set('Medy', +v)} min={0} />
-          <InputField label="MEdx" unit="kNm" value={inp.Medx} onChange={v => set('Medx', +v)} min={0} />
+          <div>
+            <div className="flex items-center gap-0.5">
+              <label className="text-xs font-medium text-slate-600">Clear height</label>
+              <HelpTooltip title="Clear height" text="Floor-to-floor height less the depth of the beam or slab above." typical="2.8–4.0 m for residential/commercial" effect="Taller column → more slender → may need additional moment" />
+            </div>
+            <InputField label="" unit="m" value={inp.height} onChange={v => set('height', +v)} min={1} />
+          </div>
+          <div>
+            <div className="flex items-center gap-0.5">
+              <label className="text-xs font-medium text-slate-600">NEd (axial)</label>
+              <HelpTooltip title="Design axial force" text="The total factored compressive load on the column at ULS. Sum loads from all floors above." typical="Accumulate: slab area × floor load × no. of floors" />
+            </div>
+            <InputField label="" unit="kN" value={inp.Ned} onChange={v => set('Ned', +v)} min={0} />
+          </div>
+          <div>
+            <div className="flex items-center gap-0.5">
+              <label className="text-xs font-medium text-slate-600">MEdy (major)</label>
+              <HelpTooltip title="Design moment (major axis)" text="Bending moment about the major axis (y-y). Can arise from eccentricity of load, lateral load, or frame action." typical="10–50% of NEd × column depth as a rough guide" />
+            </div>
+            <InputField label="" unit="kNm" value={inp.Medy} onChange={v => set('Medy', +v)} min={0} />
+          </div>
+          <InputField label="MEdx (minor)" unit="kNm" value={inp.Medx} onChange={v => set('Medx', +v)} min={0} />
           <SelectField label="Concrete" value={inp.material.concrete}
             onChange={v => setMat(v as ConcreteGrade, inp.material.rebar)}
             options={['C20/25','C25/30','C30/37','C35/45','C40/50'].map(c => ({ value: c, label: c }))} />
@@ -111,21 +148,43 @@ export default function ColumnDesign() {
         )}
       </Card>
 
-      <Card title="Cross-Section Visual" className="lg:col-span-1" actions={res ? (
-        <button onClick={() => setShow3D(p => !p)}
-          className="text-xs px-2.5 py-1 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-600">
-          {show3D ? '2D View' : '3D View'}
-        </button>
-      ) : undefined}>
-        {res ? (
+      <Card title="Diagrams & Visuals" className="lg:col-span-1">
+        <div className="flex gap-1 bg-slate-100 rounded-xl p-1 mb-4">
+          {([
+            { id: 'pm' as const, label: 'P-M Diagram' },
+            { id: 'section' as const, label: 'Section' },
+            { id: 'utilisation' as const, label: 'Utilisation' },
+          ]).map(t => (
+            <button key={t.id} onClick={() => setActiveTab(t.id)}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all
+                ${activeTab === t.id ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === 'pm' && <PMDiagram inputs={inp} factors={factors} />}
+
+        {activeTab === 'section' && (
           <>
-            {show3D ? <Column3D inputs={inp} results={res} /> : <ColumnSection inputs={inp} results={res} />}
-            <div className="mt-4 border-t border-slate-100 pt-4">
-              <PMDiagram inputs={inp} factors={factors} />
+            <div className="flex justify-end mb-2">
+              {res && (
+                <button onClick={() => setShow3D(p => !p)}
+                  className="text-xs px-2.5 py-1 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-600">
+                  {show3D ? '2D' : '3D'} View
+                </button>
+              )}
             </div>
+            {res
+              ? (show3D ? <Column3D inputs={inp} results={res} /> : <ColumnSection inputs={inp} results={res} />)
+              : <p className="text-sm text-slate-400 text-center py-8">Run design first</p>}
           </>
-        ) : (
-          <p className="text-sm text-slate-400 text-center py-8">Design output will appear here</p>
+        )}
+
+        {activeTab === 'utilisation' && (
+          res
+            ? <UtilisationBars checks={buildColChecks(inp, res)} title="Capacity checks" />
+            : <p className="text-sm text-slate-400 text-center py-8">Run design first</p>
         )}
       </Card>
     </div>

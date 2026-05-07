@@ -28,13 +28,14 @@ import CostDatabase from './components/business/CostDatabase';
 import StaffDashboard from './components/business/StaffDashboard';
 import DrawingRegister from './components/projects/DrawingRegister';
 import LoginScreen from './components/auth/LoginScreen';
+import DesignWizard from './components/wizard/DesignWizard';
 import { BuildingCodeProvider, useBuildingCode } from './context/BuildingCodeContext';
 import type { BuildingCode } from './context/BuildingCodeContext';
 import { useUser, ROLE_LABELS } from './context/UserContext';
 import { useProject } from './context/ProjectContext';
 
 type Page =
-  | 'dashboard' | 'quick' | 'loads'
+  | 'dashboard' | 'quick' | 'loads' | 'wizard'
   | 'beam' | 'column' | 'slab' | 'foundation' | 'retaining-wall' | 'staircase' | 'steel'
   | 'boq' | 'projects' | 'project-detail'
   | 'cube-tests' | 'checklists' | 'site-investigation'
@@ -43,6 +44,7 @@ type Page =
 
 const pageTitle: Record<Page, string> = {
   dashboard: 'Dashboard', quick: 'Quick Design Wizard', loads: 'Load Calculator',
+  wizard: 'Design Wizard — What do I need to design?',
   beam: 'RC Beam Design', column: 'RC Column Design', slab: 'RC Slab Design',
   foundation: 'Foundation Design', 'retaining-wall': 'Retaining Wall Design',
   staircase: 'RC Staircase Design', steel: 'Steel Member Design',
@@ -68,6 +70,7 @@ type NavGroup = { label: string; items: { id: Page; label: string; icon: any }[]
 const NAV_GROUPS: NavGroup[] = [
   { label: 'Overview', items: [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'wizard', label: 'Design Wizard', icon: Zap },
     { id: 'quick', label: 'Quick Design Wizard', icon: Zap },
     { id: 'loads', label: 'Load Calculator', icon: Calculator },
   ]},
@@ -228,6 +231,7 @@ function AppInner() {
 
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
           {page === 'dashboard'        && <Dashboard onNavigate={navigate} />}
+          {page === 'wizard'           && <DesignWizard onNavigate={navigate} />}
           {page === 'quick'            && <QuickDesign />}
           {page === 'loads'            && <LoadCalculatorPage />}
           {page === 'beam'             && <BeamDesign />}
