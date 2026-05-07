@@ -22,37 +22,95 @@ const defaultInputs: FlatSlabInputs = {
   material: getMaterial('C25/30', 'B500B'),
 };
 
-function PlanSVG({ lx, ly, cx, cy }: { lx: number; ly: number; cx: number; cy: number }) {
-  const W = 280, H = 200, pad = 30;
+function PlanSVG({ lx, ly, cx, cy, thickness, cover, res }:
+  { lx: number; ly: number; cx: number; cy: number; thickness: number; cover: number;
+    res: ReturnType<typeof designFlatSlab> | null }) {
+  const W = 290, H = 220, pad = 36;
   const scaleX = (W - 2 * pad) / lx;
   const scaleY = (H - 2 * pad) / ly;
   const pw = W - 2 * pad, ph = H - 2 * pad;
-  // Column strip bounds (min span / 2 either side)
   const csW = Math.min(lx, ly) / 2 * scaleX;
   const csH = Math.min(lx, ly) / 2 * scaleY;
   const midX = pad + pw / 2, midY = pad + ph / 2;
   const colW = (cx / 1000) * scaleX, colH = (cy / 1000) * scaleY;
 
+  // Punching perimeter (2d from column face)
+  const d_mm = thickness - cover - 10;
+  const perimRx = (cx / 2 + 2 * d_mm) / 1000 * scaleX;
+  const perimRy = (cy / 2 + 2 * d_mm) / 1000 * scaleY;
+  const perimColor = res ? (res.vEd <= res.vRdc ? '#16a34a' : '#dc2626') : '#f59e0b';
+
   return (
-    <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="w-full">
-      {/* Panel */}
-      <rect x={pad} y={pad} width={pw} height={ph} fill="#f1f5f9" stroke="#94a3b8" strokeWidth={1} />
-      {/* Middle strip shading */}
-      <rect x={midX - csW / 2} y={pad} width={csW} height={ph} fill="#dbeafe" fillOpacity={0.6} />
-      <rect x={pad} y={midY - csH / 2} width={pw} height={csH} fill="#dbeafe" fillOpacity={0.6} />
-      {/* Column strip labels */}
-      <text x={midX} y={pad - 4} textAnchor="middle" fontSize={8} fill="#3b82f6">Column strip</text>
-      {/* Panel dims */}
-      <text x={midX} y={H - 4} textAnchor="middle" fontSize={9} fill="#64748b">lx = {lx} m</text>
-      <text x={8} y={midY} textAnchor="middle" fontSize={9} fill="#64748b" transform={`rotate(-90,8,${midY})`}>ly = {ly} m</text>
+    <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="w-full bg-white">
+      <defs>
+        <pattern id="slabHatch" patternUnits="userSpaceOnUse" width={8} height={8} patternTransform="rotate(45)">
+          <line x1={0} y1={0} x2={0} y2={8} stroke="#94a3b8" strokeWidth={0.5} strokeOpacity={0.4} />
+        </pattern>
+      </defs>
+
+      {/* Slab panel */}
+      <rect x={pad} y={pad} width={pw} height={ph} fill="url(#slabHatch)" stroke="#64748b" strokeWidth={1.5} />
+      <rect x={pad} y={pad} width={pw} height={ph} fill="#f8fafc" fillOpacity={0.7} stroke="none" />
+
+      {/* Column strips (both directions) */}
+      <rect x={midX - csW / 2} y={pad} width={csW} height={ph}
+        fill="#dbeafe" fillOpacity={0.55} stroke="#93c5fd" strokeWidth={0.8} strokeDasharray="4,2" />
+      <rect x={pad} y={midY - csH / 2} width={pw} height={csH}
+        fill="#dbeafe" fillOpacity={0.55} stroke="#93c5fd" strokeWidth={0.8} strokeDasharray="4,2" />
+
+      {/* Middle strip labels */}
+      <text x={pad + 4} y={midY - csH / 2 - 4} fontSize={7} fill="#3b82f6" fontWeight="600">Column strip</text>
+      <text x={pad + 4} y={pad + 10} fontSize={7} fill="#64748b">Middle strip</text>
+
+      {/* Punching shear perimeter (rounded rect at 2d from column face) */}
+      <rect x={midX - perimRx} y={midY - perimRy} width={perimRx * 2} height={perimRy * 2}
+        fill={perimColor} fillOpacity={0.08} stroke={perimColor} strokeWidth={1.5}
+        strokeDasharray="6,3" rx={perimRx * 0.3} />
+      {/* 2d dimension leaders */}
+      <line x1={midX + colW / 2} y1={midY} x2={midX + perimRx} y2={midY}
+        stroke={perimColor} strokeWidth={0.8} strokeDasharray="2,2" />
+      <text x={midX + (colW / 2 + perimRx) / 2} y={midY - 4}
+        fontSize={6.5} fill={perimColor} textAnchor="middle">2d</text>
+      <text x={midX} y={midY + perimRy + 10} textAnchor="middle" fontSize={7} fill={perimColor} fontWeight="700">
+        u₁ = {res ? res.u1.toFixed(0) : '—'} mm
+      </text>
+
       {/* Corner columns */}
-      {[[0,0],[pw,0],[0,ph],[pw,ph]].map(([ox,oy],i) => (
-        <rect key={i} x={pad + ox - colW / 2} y={pad + oy - colH / 2} width={colW} height={colH} fill="#475569" />
+      {([[0,0],[pw,0],[0,ph],[pw,ph]] as [number,number][]).map(([ox,oy],i) => (
+        <rect key={i} x={pad + ox - colW / 2} y={pad + oy - colH / 2}
+          width={colW} height={colH} fill="#334155" />
       ))}
-      {/* Centre column */}
-      <rect x={midX - colW / 2} y={midY - colH / 2} width={colW} height={colH} fill="#475569" />
-      {/* Critical perimeter label */}
-      <text x={midX + 10} y={midY + 20} fontSize={7} fill="#ef4444">u₁ (2d)</text>
+
+      {/* Internal column + punching indicator ring */}
+      <rect x={midX - colW / 2} y={midY - colH / 2} width={colW} height={colH} fill="#334155" />
+      {res && (
+        <text x={midX + perimRx + 4} y={midY + perimRy - 4} fontSize={7} fill={perimColor} fontWeight="700">
+          {(res.vEd / res.vRdc * 100).toFixed(0)}%
+        </text>
+      )}
+
+      {/* Dimension annotations */}
+      {/* lx */}
+      <line x1={pad} y1={pad - 14} x2={pad + pw} y2={pad - 14}
+        stroke="#64748b" strokeWidth={0.8} markerEnd="url(#slabDimA)" markerStart="url(#slabDimB)" />
+      <text x={midX} y={pad - 18} textAnchor="middle" fontSize={8} fill="#475569" fontWeight="700">lx = {lx} m</text>
+      {/* ly */}
+      <line x1={pad - 16} y1={pad} x2={pad - 16} y2={pad + ph}
+        stroke="#64748b" strokeWidth={0.8} markerEnd="url(#slabDimA)" markerStart="url(#slabDimB)" />
+      <text x={pad - 18} y={midY} fontSize={8} fill="#475569" fontWeight="700"
+        transform={`rotate(-90,${pad - 18},${midY})`} textAnchor="middle">ly = {ly} m</text>
+
+      {/* Slab thickness note */}
+      <text x={W - 4} y={H - 4} textAnchor="end" fontSize={7} fill="#64748b">h = {thickness} mm slab</text>
+
+      <defs>
+        <marker id="slabDimA" markerWidth={5} markerHeight={5} refX={0} refY={2.5} orient="auto">
+          <path d="M0,0 L5,2.5 L0,5 Z" fill="#64748b" />
+        </marker>
+        <marker id="slabDimB" markerWidth={5} markerHeight={5} refX={5} refY={2.5} orient="auto-start-reverse">
+          <path d="M0,0 L5,2.5 L0,5 Z" fill="#64748b" />
+        </marker>
+      </defs>
     </svg>
   );
 }
@@ -211,7 +269,8 @@ export default function FlatSlabDesign() {
           </div>
           {activeTab === 'plan' && (
             <>
-              <PlanSVG lx={inp.lx} ly={inp.ly} cx={inp.columnCx} cy={inp.columnCy} />
+              <PlanSVG lx={inp.lx} ly={inp.ly} cx={inp.columnCx} cy={inp.columnCy}
+                thickness={inp.thickness} cover={inp.cover} res={res} />
               <div className="mt-3 space-y-1 text-xs">
                 <div className="flex items-center gap-2"><div className="w-4 h-3 bg-blue-200 rounded" /><span className="text-slate-500">Column strip (60–75% of moment)</span></div>
                 <div className="flex items-center gap-2"><div className="w-4 h-3 bg-slate-100 rounded border border-slate-300" /><span className="text-slate-500">Middle strip (remaining moment)</span></div>
