@@ -20,6 +20,10 @@ import MasonryWallDesign from './components/analysis/MasonryWallDesign';
 import PortalFrame from './components/analysis/PortalFrame';
 import CompositeBeam from './components/analysis/CompositeBeam';
 import SteelConnection from './components/analysis/SteelConnection';
+import PavementDesign from './components/analysis/PavementDesign';
+import CulvertDesign from './components/analysis/CulvertDesign';
+import BridgeBeam from './components/analysis/BridgeBeam';
+import BridgeAbutment from './components/analysis/BridgeAbutment';
 import BOQ from './components/reports/BOQ';
 import LoadCalculatorPage from './components/analysis/LoadCalculatorPage';
 import QuickDesign from './components/analysis/QuickDesign';
@@ -46,6 +50,7 @@ type Page =
   | 'beam' | 'column' | 'slab' | 'flat-slab' | 'foundation' | 'retaining-wall' | 'staircase' | 'steel'
   | 'pile' | 'pile-cap' | 'masonry-wall'
   | 'portal-frame' | 'composite-beam' | 'steel-connection'
+  | 'pavement' | 'culvert' | 'bridge-beam' | 'bridge-abutment'
   | 'boq' | 'projects' | 'project-detail'
   | 'cube-tests' | 'checklists' | 'site-investigation'
   | 'code-reference' | 'unit-converter' | 'worked-examples'
@@ -63,6 +68,10 @@ const pageTitle: Record<Page, string> = {
   'portal-frame': 'Steel Portal Frame (EC3)',
   'composite-beam': 'Composite Beam Design (EC4)',
   'steel-connection': 'Steel Connection Design (EC3-1-8)',
+  'pavement': 'Road Pavement Design (TRL RN31 / CBR Method)',
+  'culvert': 'RC Box Culvert Design',
+  'bridge-beam': 'Bridge Beam Design (EC2 / BS5400)',
+  'bridge-abutment': 'Bridge Abutment Design (Rankine)',
   boq: 'Bill of Quantities', projects: 'Project Register', 'project-detail': 'Project Detail',
   'cube-tests': 'Concrete Cube Test Log', checklists: 'Inspection Checklists',
   'site-investigation': 'Site Investigation Log',
@@ -122,6 +131,12 @@ const NAV_GROUPS: NavGroup[] = [
     { id: 'code-reference', label: 'Code Reference', icon: BookOpen },
     { id: 'worked-examples', label: 'Worked Examples', icon: FileText },
     { id: 'unit-converter', label: 'Unit Converter', icon: Ruler },
+  ]},
+  { label: 'Transportation', items: [
+    { id: 'pavement', label: 'Road Pavement', icon: Layers },
+    { id: 'culvert', label: 'Box Culvert', icon: Square },
+    { id: 'bridge-beam', label: 'Bridge Beam', icon: Layers },
+    { id: 'bridge-abutment', label: 'Bridge Abutment', icon: Hammer },
   ]},
   { label: 'Business', items: [
     { id: 'boq', label: 'Bill of Quantities', icon: FileText },
@@ -274,6 +289,10 @@ function AppInner() {
           {page === 'portal-frame'     && <PortalFrame />}
           {page === 'composite-beam'   && <CompositeBeam />}
           {page === 'steel-connection' && <SteelConnection />}
+          {page === 'pavement'         && <PavementDesign />}
+          {page === 'culvert'          && <CulvertDesign />}
+          {page === 'bridge-beam'      && <BridgeBeam />}
+          {page === 'bridge-abutment'  && <BridgeAbutment />}
           {page === 'boq'              && <BOQ />}
           {page === 'projects'         && <ProjectList onSelect={goToProject} />}
           {page === 'project-detail'   && detailProjectId &&
