@@ -21,6 +21,8 @@ import { useBuildingCode } from '../../context/BuildingCodeContext';
 import type { BeamInputs, BeamResults, ConcreteGrade, RebarGrade } from '../../types/structural';
 import { BookOpen, Sliders } from 'lucide-react';
 
+const BEAM_CONCRETE_GRADES: ConcreteGrade[] = ['C20/25', 'C25/30', 'C30/37', 'C35/45', 'C40/50'];
+
 const defaultInputs: BeamInputs = {
   span: 6, width: 250, depth: 450, cover: 35,
   deadLoad: 15, liveLoad: 10,
@@ -48,11 +50,17 @@ function buildChecks(
       capacity: Klim,
       note: 'K / Klim',
       unit: '',
-      hint: 'K > 0.167 means the compression zone is over-stressed. Increase beam depth or add top compression bars.',
-      actions: [
-        { label: `+50 mm depth (→ ${inp.depth + 50} mm)`, onClick: () => runWith({ depth: inp.depth + 50 }) },
-        { label: `+50 mm width (→ ${inp.width + 50} mm)`, onClick: () => runWith({ width: inp.width + 50 }) },
-      ],
+      hint: 'K > 0.167 means the compression zone is over-stressed. Increase beam depth or use higher-grade concrete.',
+      actions: (() => {
+        const curGrade = inp.material.concrete as ConcreteGrade;
+        const gi = BEAM_CONCRETE_GRADES.indexOf(curGrade);
+        const upGrade = gi >= 0 && gi < BEAM_CONCRETE_GRADES.length - 1 ? BEAM_CONCRETE_GRADES[gi + 1] : null;
+        return [
+          { label: `+50 mm depth (→ ${inp.depth + 50} mm)`, onClick: () => runWith({ depth: inp.depth + 50 }) },
+          { label: `+50 mm width (→ ${inp.width + 50} mm)`, onClick: () => runWith({ width: inp.width + 50 }) },
+          ...(upGrade ? [{ label: `Upgrade concrete → ${upGrade}`, onClick: () => runWith({ material: getMaterial(upGrade, inp.material.rebar as RebarGrade) }) }] : []),
+        ];
+      })(),
     },
     {
       label: 'Flexural steel',
@@ -113,7 +121,7 @@ export default function BeamDesign() {
   const [show3D, setShow3D] = useState(false);
   const [mode, setMode]     = useState<'standard' | 'guided'>('standard');
   const [activeTab, setActiveTab] = useState<'diagram' | 'section' | 'utilisation'>('diagram');
-  const [suggestion, setSuggestion] = useState<{ depth: number; width: number } | null>(null);
+  const [suggestion, setSuggestion] = useState<{ depth: number; width: number; concrete: ConcreteGrade } | null>(null);
   const { factors } = useBuildingCode();
 
   const set = (key: keyof BeamInputs, val: string | number) => {
@@ -139,31 +147,39 @@ export default function BeamDesign() {
   };
 
   // Finds the minimum depth/width that puts geometry-controllable checks ≤ 80 %
-  // Crack width is excluded — it requires bar spacing adjustment, not section sizing
+  // Crack width excluded (bar layout issue, not section size). Binary shear check excluded via skipOptimise.
   const optimise = () => {
     if (!res) return;
+    const MAX_DEPTH = 1000, MAX_WIDTH = 600; // mm — practical limits
     const calcPct = (c: UtilCheck) =>
       c.capacity === 0 ? 0 : c.invert
         ? (c.capacity / c.demand) * 100
         : (c.demand / c.capacity) * 100;
-    // Bending, steel area, deflection → increase depth
-    // Shear → increase width
     const depthSensitive = (label: string) =>
       label.includes('Bending') || label.includes('Flexural') || label.includes('depth');
-    let depth = inp.depth;
-    let width = inp.width;
-    for (let i = 0; i < 80; i++) {
-      const testInp = { ...inp, depth, width };
+    let depth = inp.depth, width = inp.width;
+    let concrete = inp.material.concrete as ConcreteGrade;
+    let gradeIdx = BEAM_CONCRETE_GRADES.indexOf(concrete);
+    for (let i = 0; i < 30; i++) {
+      const testMat = getMaterial(concrete, inp.material.rebar as RebarGrade);
+      const testInp = { ...inp, depth, width, material: testMat };
       const testRes = designBeam(testInp, factors);
       const checks = buildChecks(testInp, testRes, factors, () => {});
-      // Exclude crack width (bar layout) and binary checks flagged skipOptimise
       const failing = checks.filter(c => calcPct(c) > 80 && !c.label.includes('Crack') && !c.skipOptimise);
       if (failing.length === 0) break;
       const worst = failing.reduce((a, b) => calcPct(a) > calcPct(b) ? a : b);
-      if (depthSensitive(worst.label)) depth = Math.ceil((depth + 25) / 25) * 25;
-      else width = Math.ceil((width + 25) / 25) * 25;
+      const atDepthCap = depth >= MAX_DEPTH, atWidthCap = width >= MAX_WIDTH;
+      if (atDepthCap && atWidthCap) {
+        // Both at ceiling — escalate concrete grade
+        if (gradeIdx < BEAM_CONCRETE_GRADES.length - 1) concrete = BEAM_CONCRETE_GRADES[++gradeIdx];
+        else break;
+      } else if (depthSensitive(worst.label) && !atDepthCap) {
+        depth = Math.min(Math.ceil((depth + 25) / 25) * 25, MAX_DEPTH);
+      } else {
+        width = Math.min(Math.ceil((width + 25) / 25) * 25, MAX_WIDTH);
+      }
     }
-    setSuggestion({ depth, width });
+    setSuggestion({ depth, width, concrete });
   };
 
   const wEd = 1.35 * inp.deadLoad + 1.5 * inp.liveLoad;
@@ -460,9 +476,14 @@ export default function BeamDesign() {
                       rows={[
                         { label: 'Beam depth', current: inp.depth, suggested: suggestion.depth, unit: 'mm' },
                         { label: 'Beam width', current: inp.width, suggested: suggestion.width, unit: 'mm' },
+                        { label: 'Concrete grade', current: 0, suggested: suggestion.concrete === inp.material.concrete ? 0 : 1,
+                          unit: '', currentLabel: inp.material.concrete, suggestedLabel: suggestion.concrete },
                       ]}
-                      note="Minimum section for bending, shear and deflection. If crack width still flags, reduce bar spacing or increase bar count in the input panel."
-                      onApply={() => { runWith(suggestion); setSuggestion(null); }}
+                      note="Minimum values for bending, shear and deflection. If crack width still flags, reduce bar spacing in the input panel."
+                      onApply={() => {
+                        runWith({ depth: suggestion.depth, width: suggestion.width, material: getMaterial(suggestion.concrete, inp.material.rebar as RebarGrade) });
+                        setSuggestion(null);
+                      }}
                       onDismiss={() => setSuggestion(null)}
                     />
                   )}

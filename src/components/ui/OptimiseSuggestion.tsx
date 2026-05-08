@@ -8,6 +8,9 @@ export interface SuggestionRow {
   current: number;
   suggested: number;
   unit: string;
+  /** Override the numeric display with a text label (e.g. for grade changes) */
+  currentLabel?: string;
+  suggestedLabel?: string;
 }
 
 interface Props {
@@ -38,11 +41,17 @@ export default function OptimiseSuggestion({ rows, onApply, onDismiss, note }: P
               <span className="font-mono">
                 {isChanged ? (
                   <>
-                    <span className="text-slate-400 line-through mr-1">{r.current} {r.unit}</span>
-                    <span className="text-blue-700 font-bold">{r.suggested} {r.unit}</span>
+                    <span className="text-slate-400 line-through mr-1">
+                      {r.currentLabel ?? `${r.current} ${r.unit}`}
+                    </span>
+                    <span className="text-blue-700 font-bold">
+                      {r.suggestedLabel ?? `${r.suggested} ${r.unit}`}
+                    </span>
                   </>
                 ) : (
-                  <span className="text-emerald-600">{r.current} {r.unit} ✓</span>
+                  <span className="text-emerald-600">
+                    {r.currentLabel ?? `${r.current} ${r.unit}`} ✓
+                  </span>
                 )}
               </span>
             </div>

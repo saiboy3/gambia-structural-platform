@@ -26,11 +26,19 @@ const defaultInputs: ColumnInputs = {
   braced: true,
 };
 
+const CONCRETE_GRADES: ConcreteGrade[] = ['C20/25', 'C25/30', 'C30/37', 'C35/45', 'C40/50'];
+function nextConcreteGrade(g: ConcreteGrade): ConcreteGrade | null {
+  const i = CONCRETE_GRADES.indexOf(g);
+  return i >= 0 && i < CONCRETE_GRADES.length - 1 ? CONCRETE_GRADES[i + 1] : null;
+}
+
 function buildColChecks(
   inp: ColumnInputs,
   res: ColumnResults,
   runWith: (patch: Partial<ColumnInputs>) => void,
 ): UtilCheck[] {
+  const currentGrade = inp.material.concrete as ConcreteGrade;
+  const upGrade = nextConcreteGrade(currentGrade);
   return [
     { label: 'Axial capacity', demand: inp.Ned, capacity: res.capacity, unit: 'kN', note: 'NEd / NRd',
       hint: 'Column cannot carry the axial load. Increase section size or use higher-grade concrete.',
@@ -38,6 +46,7 @@ function buildColChecks(
         { label: `+50 mm b (→ ${inp.b + 50} mm)`, onClick: () => runWith({ b: inp.b + 50 }) },
         { label: `+50 mm h (→ ${inp.h + 50} mm)`, onClick: () => runWith({ h: inp.h + 50 }) },
         { label: `+50 mm b & h`, onClick: () => runWith({ b: inp.b + 50, h: inp.h + 50 }) },
+        ...(upGrade ? [{ label: `Upgrade concrete → ${upGrade}`, onClick: () => runWith({ material: getMaterial(upGrade, inp.material.rebar as RebarGrade) }) }] : []),
       ],
     },
     { label: 'As provided', demand: res.mainBars.As, capacity: res.AsReq, unit: 'mm²', note: 'As,prov / As,req', invert: true,
@@ -64,7 +73,7 @@ export default function ColumnDesign() {
   const [res, setRes] = useState<ColumnResults | null>(null);
   const [show3D, setShow3D] = useState(false);
   const [activeTab, setActiveTab] = useState<'section' | 'pm' | 'utilisation'>('pm');
-  const [suggestion, setSuggestion] = useState<{ b: number; h: number } | null>(null);
+  const [suggestion, setSuggestion] = useState<{ b: number; h: number; concrete: ConcreteGrade } | null>(null);
   const { factors } = useBuildingCode();
 
   const set = (key: keyof ColumnInputs, val: string | number | boolean) => {
@@ -83,22 +92,31 @@ export default function ColumnDesign() {
 
   const optimise = () => {
     if (!res) return;
+    const MAX_DIM = 700; // mm — sensible ceiling for most building columns
     const calcPct = (c: UtilCheck) =>
       c.capacity === 0 ? 0 : c.invert
         ? (c.capacity / c.demand) * 100
         : (c.demand / c.capacity) * 100;
     let b = inp.b, h = inp.h;
-    for (let i = 0; i < 80; i++) {
-      const testInp = { ...inp, b, h };
+    let concrete = inp.material.concrete as ConcreteGrade;
+    let gradeIdx = CONCRETE_GRADES.indexOf(concrete);
+    for (let i = 0; i < 30; i++) {
+      const testMat = getMaterial(concrete, inp.material.rebar as RebarGrade);
+      const testInp = { ...inp, b, h, material: testMat };
       const testRes = designColumn(testInp, factors);
       const checks = buildColChecks(testInp, testRes, () => {});
-      const failing = checks.filter(c => c.label !== 'Max steel (4% Ac)' && calcPct(c) > 80);
+      const failing = checks.filter(c => c.label !== 'Max steel (4% Ac)' && !c.skipOptimise && calcPct(c) > 80);
       if (failing.length === 0) break;
-      // Grow both dimensions equally to keep section proportions
-      b = Math.ceil((b + 25) / 25) * 25;
-      h = Math.ceil((h + 25) / 25) * 25;
+      if (b >= MAX_DIM && h >= MAX_DIM) {
+        // Section at ceiling — escalate concrete grade instead
+        if (gradeIdx < CONCRETE_GRADES.length - 1) concrete = CONCRETE_GRADES[++gradeIdx];
+        else break;
+      } else {
+        b = Math.min(Math.ceil((b + 25) / 25) * 25, MAX_DIM);
+        h = Math.min(Math.ceil((h + 25) / 25) * 25, MAX_DIM);
+      }
     }
-    setSuggestion({ b, h });
+    setSuggestion({ b, h, concrete });
   };
 
   return (
@@ -250,9 +268,14 @@ export default function ColumnDesign() {
                   rows={[
                     { label: 'Column width (b)', current: inp.b, suggested: suggestion.b, unit: 'mm' },
                     { label: 'Column depth (h)', current: inp.h, suggested: suggestion.h, unit: 'mm' },
+                    { label: 'Concrete grade', current: 0, suggested: suggestion.concrete === inp.material.concrete ? 0 : 1,
+                      unit: '', currentLabel: inp.material.concrete, suggestedLabel: suggestion.concrete },
                   ]}
-                  note="Minimum section size. In practice round to the nearest 50 mm construction increment."
-                  onApply={() => { runWith(suggestion); setSuggestion(null); }}
+                  note="Minimum values — round dimensions to nearest 50 mm. Bars and links are auto-selected from As,req."
+                  onApply={() => {
+                    runWith({ b: suggestion.b, h: suggestion.h, material: getMaterial(suggestion.concrete, inp.material.rebar as RebarGrade) });
+                    setSuggestion(null);
+                  }}
                   onDismiss={() => setSuggestion(null)}
                 />
               )}
