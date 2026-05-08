@@ -95,12 +95,13 @@ export default function PileCapDesign() {
 
   const optimise = () => {
     if (!res) return;
-    let capThickness = inp.capThickness;
+    let capThickness = 300; // start from practical minimum (mm)
     for (let i = 0; i < 60; i++) {
       const testRes = designPileCap({ ...inp, capThickness }, factors);
       const punchUtil = testRes.vRdc > 0 ? (testRes.vEd_col / testRes.vRdc) * 100 : 200;
       const steelUtil = testRes.bars.As > 0 ? (testRes.As_req / testRes.bars.As) * 100 : 200;
-      if (punchUtil <= 80 && steelUtil <= 80) break;
+      // steelUtil is As_req/As_prov (inverted check) — only needs to be ≤100 to pass; punch needs 80% headroom
+      if (punchUtil <= 80 && steelUtil <= 100) break;
       capThickness = Math.ceil((capThickness + 50) / 50) * 50;
     }
     setSuggestion({ capThickness });

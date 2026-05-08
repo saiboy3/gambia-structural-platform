@@ -97,7 +97,8 @@ export default function ColumnDesign() {
       c.capacity === 0 ? 0 : c.invert
         ? (c.capacity / c.demand) * 100
         : (c.demand / c.capacity) * 100;
-    let b = inp.b, h = inp.h;
+    // Start from practical minimums so the result is always the true minimum, not "current is fine"
+    let b = 200, h = 200;
     let concrete = inp.material.concrete as ConcreteGrade;
     let gradeIdx = CONCRETE_GRADES.indexOf(concrete);
     for (let i = 0; i < 30; i++) {
@@ -105,7 +106,8 @@ export default function ColumnDesign() {
       const testInp = { ...inp, b, h, material: testMat };
       const testRes = designColumn(testInp, factors);
       const checks = buildColChecks(testInp, testRes, () => {});
-      const failing = checks.filter(c => c.label !== 'Max steel (4% Ac)' && !c.skipOptimise && calcPct(c) > 80);
+      const failing = checks.filter(c => c.label !== 'Max steel (4% Ac)' && !c.skipOptimise
+        && (c.invert ? calcPct(c) > 100 : calcPct(c) > 80));
       if (failing.length === 0) break;
       if (b >= MAX_DIM && h >= MAX_DIM) {
         // Section at ceiling — escalate concrete grade instead

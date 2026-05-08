@@ -140,14 +140,15 @@ export default function FlatSlabDesign() {
   const optimise = () => {
     if (!res) return;
     const depthLimit = inp.interiorCol ? 31 : 28;
-    let thickness = inp.thickness;
+    let thickness = 150; // start from practical minimum (mm)
     for (let i = 0; i < 60; i++) {
       const testRes = designFlatSlab({ ...inp, thickness }, factors);
       const punchUtil = testRes.vRdc > 0 ? (testRes.vEd / testRes.vRdc) * 100 : 200;
       const topUtil   = testRes.bars_cs_top.As > 0 ? (testRes.As_cs_top / testRes.bars_cs_top.As) * 100 : 200;
       const botUtil   = testRes.bars_cs_bot.As > 0 ? (testRes.As_cs_bot / testRes.bars_cs_bot.As) * 100 : 200;
       const spanUtil  = testRes.spanRatio > 0 ? (testRes.spanRatio / depthLimit) * 100 : 200;
-      if (punchUtil <= 80 && topUtil <= 80 && botUtil <= 80 && spanUtil <= 80) break;
+      // steel utils are As_req/As_prov (inverted) — only need ≤100; punch and span need 80% headroom
+      if (punchUtil <= 80 && topUtil <= 100 && botUtil <= 100 && spanUtil <= 80) break;
       thickness = Math.ceil((thickness + 25) / 25) * 25;
     }
     setSuggestion({ thickness });

@@ -157,7 +157,8 @@ export default function BeamDesign() {
         : (c.demand / c.capacity) * 100;
     const depthSensitive = (label: string) =>
       label.includes('Bending') || label.includes('Flexural') || label.includes('depth');
-    let depth = inp.depth, width = inp.width;
+    // Start depth from practical minimum; keep user's width (architectural choice — only optimise depth)
+    let depth = 250, width = inp.width;
     let concrete = inp.material.concrete as ConcreteGrade;
     let gradeIdx = BEAM_CONCRETE_GRADES.indexOf(concrete);
     for (let i = 0; i < 30; i++) {
@@ -165,7 +166,9 @@ export default function BeamDesign() {
       const testInp = { ...inp, depth, width, material: testMat };
       const testRes = designBeam(testInp, factors);
       const checks = buildChecks(testInp, testRes, factors, () => {});
-      const failing = checks.filter(c => calcPct(c) > 80 && !c.label.includes('Crack') && !c.skipOptimise);
+      // Inverted checks (e.g. As,prov > As,req) only need to PASS (>100 = fail); normal checks target 80% headroom
+      const failing = checks.filter(c => !c.label.includes('Crack') && !c.skipOptimise
+        && (c.invert ? calcPct(c) > 100 : calcPct(c) > 80));
       if (failing.length === 0) break;
       const worst = failing.reduce((a, b) => calcPct(a) > calcPct(b) ? a : b);
       const atDepthCap = depth >= MAX_DEPTH, atWidthCap = width >= MAX_WIDTH;
