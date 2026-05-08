@@ -95,7 +95,7 @@ export default function PileCapDesign() {
 
   const optimise = () => {
     if (!res) return;
-    let capThickness = 300; // start from practical minimum (mm)
+    let capThickness = inp.capThickness; // grow from current — only increase if needed
     for (let i = 0; i < 60; i++) {
       const testRes = designPileCap({ ...inp, capThickness }, factors);
       const punchUtil = testRes.vRdc > 0 ? (testRes.vEd_col / testRes.vRdc) * 100 : 200;

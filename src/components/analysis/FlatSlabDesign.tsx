@@ -140,7 +140,7 @@ export default function FlatSlabDesign() {
   const optimise = () => {
     if (!res) return;
     const depthLimit = inp.interiorCol ? 31 : 28;
-    let thickness = 150; // start from practical minimum (mm)
+    let thickness = inp.thickness; // grow from current — only increase if needed
     for (let i = 0; i < 60; i++) {
       const testRes = designFlatSlab({ ...inp, thickness }, factors);
       const punchUtil = testRes.vRdc > 0 ? (testRes.vEd / testRes.vRdc) * 100 : 200;

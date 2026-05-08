@@ -97,8 +97,9 @@ export default function ColumnDesign() {
       c.capacity === 0 ? 0 : c.invert
         ? (c.capacity / c.demand) * 100
         : (c.demand / c.capacity) * 100;
-    // Start from practical minimums so the result is always the true minimum, not "current is fine"
-    let b = 200, h = 200;
+    // Start from the user's current section — the optimizer only grows if checks fail.
+    // Column dimensions are usually architecturally fixed; we find what's needed FROM the current size.
+    let b = inp.b, h = inp.h;
     let concrete = inp.material.concrete as ConcreteGrade;
     let gradeIdx = CONCRETE_GRADES.indexOf(concrete);
     for (let i = 0; i < 30; i++) {

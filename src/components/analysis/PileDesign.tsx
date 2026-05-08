@@ -107,8 +107,8 @@ export default function PileDesign() {
   // (all checks < 80 % means reasonable reserve over FoS-adjusted capacity)
   const optimise = () => {
     if (!res) return;
-    let length = 3;       // start from practical minimum (m)
-    let diameter = 300;   // start from practical minimum (mm)
+    let length = inp.length;     // grow from current — only increase if needed
+    let diameter = inp.diameter;
     for (let i = 0; i < 60; i++) {
       const testRes = designPile({ ...inp, length, diameter });
       // Both Qs and Qb are contributions; we want Qa well above any applied load.
