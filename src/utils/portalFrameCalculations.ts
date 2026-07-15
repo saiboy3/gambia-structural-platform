@@ -127,9 +127,15 @@ export function designPortalFrame(inp: PortalFrameInputs): PortalFrameResults {
   // LTB check: simplified from EC3 6.3.2
   const Leff_rafter = rafterLength * 1000;  // mm — effective length (full for no restraint)
   const LTB_lambda = (Leff_rafter / (rafter.iz * 10)) / (Math.PI * Math.sqrt(210000 / fy));
+  // EC3 §6.3.2.2 general case: χLT = 1/(φLT+√(φLT²-λ̄LT²)), φLT = 0.5(1+αLT(λ̄LT-0.2)+λ̄LT²)
+  // (matches the approach used in steelCalculations.ts). The old sqrt(λ²-0.4) approximation
+  // went negative — and produced NaN — for short/stocky rafters with no lateral restraint.
+  const alpha_LT_rafter = 0.49; // rolled I — buckling curve b
+  const phi_LT_rafter = 0.5 * (1 + alpha_LT_rafter * (LTB_lambda - 0.2) + LTB_lambda ** 2);
+  const chi_LT_calc = Math.min(1.0, 1 / (phi_LT_rafter + Math.sqrt(Math.max(0, phi_LT_rafter ** 2 - LTB_lambda ** 2))));
   const chi_LT = inp.lateralRestraint === 'full' ? 1.0 :
     inp.lateralRestraint === 'intermediate' ? 0.85 :
-    Math.max(0.4, 1 / (LTB_lambda + Math.sqrt(LTB_lambda * LTB_lambda - 0.4)));
+    chi_LT_calc;
   const MbRd_rafter = chi_LT * McRd_rafter;
 
   const util_rafter = Med_rafter / MbRd_rafter;
