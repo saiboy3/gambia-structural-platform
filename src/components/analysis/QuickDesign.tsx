@@ -106,10 +106,10 @@ function WindSummary({ res }: { res: QuickDesignResults }) {
   const w = res.wind;
   return (
     <Card title={
-      <div className="flex items-center gap-2">
+      <span className="flex items-center gap-2">
         <Wind size={14} className="text-slate-500" />
         <span>Wind Load (EN 1991-1-4 estimate)</span>
-      </div>
+      </span>
     }>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
@@ -184,7 +184,7 @@ function SectionTuner({
 
   return (
     <Card title={
-      <div className="flex items-center gap-2">
+      <span className="flex items-center gap-2">
         <SlidersHorizontal size={14} className="text-slate-500" />
         <span>Adjust Sections &amp; Recalculate</span>
         {anyModified && (
@@ -192,7 +192,7 @@ function SectionTuner({
             Modified
           </span>
         )}
-      </div>
+      </span>
     }>
       <p className="text-xs text-slate-500 mb-3">
         Edit any section parameter below, then click <strong>Recalculate</strong> to update all results instantly.
