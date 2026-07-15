@@ -78,14 +78,21 @@ export function designFlatSlab(inp: FlatSlabInputs, cf: CodeFactors): FlatSlabRe
   const cs_width = Math.min(lx, ly);  // m
   const Med_cs_neg = (cs_neg_frac * M_neg) / cs_width;  // kNm/m
   const Med_cs_pos = (cs_pos_frac * M_pos) / cs_width;
-  const Med_ms_pos = (ms_pos_frac * M_pos) / ((lx - cs_width));   // kNm/m on middle strip
+  // Middle strip occupies the rest of the panel width. Since lx is documented
+  // as the shorter span, min(lx,ly) === lx in virtually every real input —
+  // using (lx - cs_width) here always divided by zero. Use the longer span
+  // instead, with a floor (half the short span) so a square panel — where
+  // the column strip would otherwise claim the full width — still gets a
+  // sensible, non-zero middle strip.
+  const ms_width = Math.max(Math.abs(lx - ly), 0.5 * Math.min(lx, ly));  // m
+  const Med_ms_pos = (ms_pos_frac * M_pos) / ms_width;   // kNm/m on middle strip
 
   // ── Reinforcement ──────────────────────────────────────────────────────────
   const Klim = 0.167;
   const asReq = (M: number, depth: number) => {
     const K = (M * 1e6) / (fck * 1000 * depth * depth);
     if (K > Klim) msgs.push(`WARN: K=${K.toFixed(3)} > Klim — increase thickness`);
-    const z = Math.min(depth * (0.5 + Math.sqrt(0.25 - K / 1.134)), 0.95 * depth);
+    const z = Math.min(depth * (0.5 + Math.sqrt(Math.max(0, 0.25 - K / 1.134))), 0.95 * depth);
     return Math.max((M * 1e6) / (fyd * z), 0.26 * (fck ** 0.5 / 500) * 1000 * depth);
   };
 

@@ -31,17 +31,30 @@ function ColumnMesh({ inputs, results }: Props) {
       barPositions.push([r * Math.cos(a), r * Math.sin(a)]);
     }
   } else {
+    const hx = W / 2 - cover - mainDia / 2;
+    const hz = D / 2 - cover - mainDia / 2;
     const corners: [number, number][] = [
-      [-W / 2 + cover + mainDia / 2, -D / 2 + cover + mainDia / 2],
-      [ W / 2 - cover - mainDia / 2, -D / 2 + cover + mainDia / 2],
-      [ W / 2 - cover - mainDia / 2,  D / 2 - cover - mainDia / 2],
-      [-W / 2 + cover + mainDia / 2,  D / 2 - cover - mainDia / 2],
+      [-hx, -hz], [hx, -hz], [hx, hz], [-hx, hz],
     ];
-    barPositions.push(...corners);
-    const extras = n - 4;
-    for (let i = 0; i < extras; i++) {
-      const t = (i / extras);
-      barPositions.push([(-W / 2 + cover) + t * (W - 2 * cover), -D / 2 + cover + mainDia / 2]);
+    if (n >= 4) {
+      // Corners always present; extras distributed evenly across all 4 faces
+      // (not just one) so the cage stays symmetric for any bar count.
+      barPositions.push(...corners);
+      const extras = n - 4;
+      for (let i = 0; i < extras; i++) {
+        const side = i % 4;
+        const p = Math.floor(i / 4) + 1;
+        const total = Math.ceil(extras / 4) + 1;
+        const t = p / total;
+        if (side === 0) barPositions.push([-hx + t * 2 * hx, -hz]);       // bottom face
+        else if (side === 1) barPositions.push([hx, -hz + t * 2 * hz]);   // right face
+        else if (side === 2) barPositions.push([-hx + t * 2 * hx, hz]);   // top face
+        else barPositions.push([-hx, -hz + t * 2 * hz]);                  // left face
+      }
+    } else {
+      // Fewer than 4 bars (rare, but chooseBars() can return as few as 2)
+      // — use only the actual count instead of drawing all 4 corners.
+      barPositions.push(...corners.slice(0, n));
     }
   }
 
@@ -110,7 +123,7 @@ function ColumnMesh({ inputs, results }: Props) {
 
 export default function Column3D(props: Props) {
   return (
-    <div className="w-full rounded-lg overflow-hidden bg-gradient-to-b from-slate-800 to-slate-900" style={{ height: 380 }}>
+    <div className="w-full rounded-xl overflow-hidden bg-gradient-to-b from-slate-800 to-slate-900 shadow-lg ring-1 ring-slate-700/50" style={{ height: 380 }}>
       <Canvas shadows camera={{ position: [6, 4, 6], fov: 45 }}>
         <ambientLight intensity={0.5} />
         <directionalLight position={[10, 10, 5]} intensity={1} castShadow />

@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import Card from '../ui/Card';
+import Button, { IconButton } from '../ui/Button';
 import { useBuildingCode } from '../../context/BuildingCodeContext';
 import { Calculator, ChevronDown, ChevronUp } from 'lucide-react';
+import CalcSheet from '../ui/CalcSheet';
+import { loadCalcNotes } from '../../utils/calcNotesLoads';
 
 interface OccupancyRow {
   category: string;
@@ -158,7 +161,7 @@ export default function LoadCalculator() {
                       className="w-full text-right bg-transparent outline-none font-semibold text-slate-800" />
                   </td>
                   <td className="py-1.5 pl-1">
-                    <button onClick={() => removeItem(item.id)} className="text-slate-300 hover:text-red-500 text-xs">✕</button>
+                    <IconButton tone="danger" onClick={() => removeItem(item.id)} className="!p-1 text-xs">✕</IconButton>
                   </td>
                 </tr>
               ))}
@@ -171,7 +174,7 @@ export default function LoadCalculator() {
               </tr>
             </tfoot>
           </table>
-          <button onClick={addItem} className="text-xs text-blue-600 hover:text-blue-800">+ Add item</button>
+          <Button onClick={addItem} variant="ghost" size="sm" className="!p-0 !text-blue-600 hover:!text-blue-800">+ Add item</Button>
         </Card>
 
         {/* Summary */}
@@ -215,6 +218,12 @@ export default function LoadCalculator() {
           </div>
         </Card>
       </div>
+
+      <CalcSheet
+        title="Load Calculation Sheet"
+        codeLabel={factors.label}
+        steps={loadCalcNotes(deadItems, selectedOcc, qk, { ...factors, code })}
+      />
 
       {/* Dead load reference */}
       <Card title={

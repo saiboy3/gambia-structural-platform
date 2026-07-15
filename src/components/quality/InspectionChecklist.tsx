@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Plus, CheckSquare, Square, Printer } from 'lucide-react';
+import { Plus, CheckSquare, Square, Printer, ClipboardCheck } from 'lucide-react';
 import Card from '../ui/Card';
+import Button from '../ui/Button';
 import { useProject } from '../../context/ProjectContext';
 import { useUser } from '../../context/UserContext';
 import { getItem, setItem, generateId, KEYS } from '../../utils/storage';
@@ -91,17 +92,16 @@ export default function InspectionChecklistPage() {
     return (
       <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <button onClick={() => setActive(null)}
-            className="text-xs text-slate-500 hover:text-slate-700 border border-slate-200 rounded-lg px-3 py-1.5">← Back</button>
+          <Button onClick={() => setActive(null)} variant="secondary" size="sm">← Back</Button>
           <div className="flex-1">
             <h3 className="font-semibold text-slate-800">{TYPE_LABELS[active.type]}</h3>
             <p className="text-xs text-slate-500">{active.elementRef} · {projectName(active.projectId)} · {active.date}</p>
           </div>
           <span className="text-xs text-slate-500">{checkedCount}/{total} items</span>
           {active.signedOff && <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Signed off</span>}
-          <button onClick={() => window.print()} className="flex items-center gap-1 text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50">
-            <Printer size={11} /> Print
-          </button>
+          <Button onClick={() => window.print()} variant="secondary" size="sm" icon={<Printer size={11} />}>
+            Print
+          </Button>
         </div>
 
         {/* Progress bar */}
@@ -136,11 +136,10 @@ export default function InspectionChecklistPage() {
 
         {!active.signedOff && (
           <div className="flex gap-2">
-            <button onClick={signOff}
-              disabled={!currentUser || currentUser.role === 'junior' || checkedCount < total}
-              className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white text-sm font-semibold py-2.5 rounded-xl">
+            <Button onClick={signOff} variant="success" fullWidth
+              disabled={!currentUser || currentUser.role === 'junior' || checkedCount < total}>
               Sign Off Checklist {checkedCount < total ? `(${total - checkedCount} remaining)` : ''}
-            </button>
+            </Button>
           </div>
         )}
         {active.signedOff && (
@@ -154,12 +153,18 @@ export default function InspectionChecklistPage() {
 
   return (
     <div className="space-y-4">
+      {/* Page header */}
+      <div className="bg-gradient-to-br from-teal-600 to-teal-900 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <ClipboardCheck size={22} />
+          <h1 className="text-xl font-bold">Inspection Checklists</h1>
+        </div>
+        <p className="text-teal-200 text-sm">Pre-pour, placement and post-pour site inspection checklists with senior engineer sign-off.</p>
+      </div>
+
       <div className="flex justify-between items-center">
-        <h3 className="font-semibold text-slate-800">Inspection Checklists</h3>
-        <button onClick={() => setShowNew(true)}
-          className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-xl">
-          <Plus size={14} /> New Checklist
-        </button>
+        <h3 className="font-semibold text-slate-800">All Checklists</h3>
+        <Button onClick={() => setShowNew(true)} icon={<Plus size={14} />}>New Checklist</Button>
       </div>
 
       {showNew && (
@@ -193,8 +198,8 @@ export default function InspectionChecklistPage() {
             </div>
           </div>
           <div className="flex gap-2 mt-4">
-            <button onClick={createNew} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 rounded-lg">Create Checklist</button>
-            <button onClick={() => setShowNew(false)} className="px-4 py-2 text-sm border border-slate-200 rounded-lg text-slate-500">Cancel</button>
+            <Button onClick={createNew} fullWidth>Create Checklist</Button>
+            <Button onClick={() => setShowNew(false)} variant="secondary">Cancel</Button>
           </div>
         </Card>
       )}

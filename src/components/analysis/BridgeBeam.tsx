@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Layers } from 'lucide-react';
+import Button from '../ui/Button';
 import Card from '../ui/Card';
 import InputField, { SelectField } from '../ui/InputField';
 import HelpTooltip from '../ui/HelpTooltip';
@@ -11,6 +13,8 @@ import ProjectSelector from '../projects/ProjectSelector';
 import { designBridgeBeam } from '../../utils/bridgeBeamCalculations';
 import { useBuildingCode } from '../../context/BuildingCodeContext';
 import type { BridgeBeamInputs } from '../../utils/bridgeBeamCalculations';
+import CalcSheet from '../ui/CalcSheet';
+import { bridgeBeamCalcNotes } from '../../utils/calcNotesTransport';
 
 const defaultInp: BridgeBeamInputs = {
   beamType: 'T-beam',
@@ -88,6 +92,13 @@ export default function BridgeBeam() {
 
   return (
     <div className="space-y-3">
+      <div className="bg-gradient-to-br from-rose-600 to-rose-900 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <Layers size={22} />
+          <h1 className="text-xl font-bold">Bridge Beam Design</h1>
+        </div>
+        <p className="text-rose-200 text-sm">Precast and in-situ concrete bridge beam design including ULS and SLS checks</p>
+      </div>
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-xs text-slate-500">Project:</span>
         <ProjectSelector />
@@ -160,10 +171,9 @@ export default function BridgeBeam() {
               ]} />
             <InputField label="No. of lanes" value={inp.noLanes} onChange={v => set('noLanes', +v)} min={1} max={4} />
           </div>
-          <button onClick={() => setRes(designBridgeBeam(inp, factors))}
-            className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 rounded-lg">
+          <Button onClick={() => setRes(designBridgeBeam(inp, factors))} fullWidth className="mt-4">
             Design Bridge Beam
-          </button>
+          </Button>
         </Card>
 
         <Card title="Design Results" className="lg:col-span-1">
@@ -198,6 +208,11 @@ export default function BridgeBeam() {
                   <p key={i} className={`text-xs ${m.startsWith('FAIL') ? 'text-red-600' : m.startsWith('WARN') ? 'text-amber-600' : 'text-emerald-600'}`}>{m}</p>
                 ))}
               </div>
+              <CalcSheet
+                title="Bridge Beam Calculation Sheet"
+                codeLabel={factors.label}
+                steps={bridgeBeamCalcNotes(inp, res, factors)}
+              />
               <SaveDesignPanel memberType="beam"
                 inputs={inp as unknown as Record<string, unknown>}
                 results={res as unknown as Record<string, unknown>} />

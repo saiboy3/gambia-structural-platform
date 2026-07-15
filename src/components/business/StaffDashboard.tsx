@@ -1,4 +1,4 @@
-import { Clock, CheckCircle, AlertTriangle, Layers, FolderOpen } from 'lucide-react';
+import { Clock, CheckCircle, AlertTriangle, Layers, FolderOpen, Users } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
 import { useUser, ROLE_COLORS, ROLE_LABELS } from '../../context/UserContext';
 import StatusBadge from '../workflow/StatusBadge';
@@ -36,6 +36,13 @@ export default function StaffDashboard() {
 
   return (
     <div className="space-y-6">
+      <div className="bg-gradient-to-br from-violet-600 to-violet-900 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <Users size={22} />
+          <h1 className="text-xl font-bold">Staff & HR Dashboard</h1>
+        </div>
+        <p className="text-violet-200 text-sm">Firm workload overview, overdue design reviews and team approval status</p>
+      </div>
       {/* Firm overview */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[

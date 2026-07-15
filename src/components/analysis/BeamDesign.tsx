@@ -19,7 +19,8 @@ import { designBeam } from '../../utils/beamCalculations';
 import { beamCalcNotes } from '../../utils/calcNotes';
 import { useBuildingCode } from '../../context/BuildingCodeContext';
 import type { BeamInputs, BeamResults, ConcreteGrade, RebarGrade } from '../../types/structural';
-import { BookOpen, Sliders } from 'lucide-react';
+import { BookOpen, Sliders, Layers } from 'lucide-react';
+import Button from '../ui/Button';
 
 const BEAM_CONCRETE_GRADES: ConcreteGrade[] = ['C20/25', 'C25/30', 'C30/37', 'C35/45', 'C40/50'];
 
@@ -189,6 +190,13 @@ export default function BeamDesign() {
 
   return (
     <div className="space-y-3">
+      <div className="bg-gradient-to-br from-blue-600 to-blue-900 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <Layers size={22} />
+          <h1 className="text-xl font-bold">RC Beam Design</h1>
+        </div>
+        <p className="text-blue-200 text-sm">Bending, shear and deflection checks for simply-supported, continuous and cantilever RC beams to EC2/BS8110/ACI</p>
+      </div>
       {/* Project selector + mode toggle */}
       <div className="flex items-center gap-3 flex-wrap">
         <span className="text-xs text-slate-500">Project:</span>
@@ -347,10 +355,9 @@ export default function BeamDesign() {
               </>}
             </div>
 
-            <button onClick={() => run()}
-              className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors">
+            <Button onClick={() => run()} fullWidth className="mt-4">
               Design Beam
-            </button>
+            </Button>
           </Card>
 
           {/* ── Results ───────────────────────────────────────────── */}
@@ -409,10 +416,10 @@ export default function BeamDesign() {
                 <p className="text-3xl">📐</p>
                 <p className="text-sm font-semibold text-slate-600">Ready to design</p>
                 <p className="text-xs text-slate-400 max-w-48 mx-auto">Adjust the parameters on the left then click <strong>Design Beam</strong></p>
-                <button onClick={() => setMode('guided')}
-                  className="mt-2 text-xs text-blue-600 hover:underline">
+                <Button variant="ghost" size="sm" onClick={() => setMode('guided')}
+                  className="mt-2 !text-blue-600 hover:!underline">
                   New to beam design? Try Guided mode →
-                </button>
+                </Button>
               </div>
             )}
           </Card>
@@ -448,10 +455,9 @@ export default function BeamDesign() {
               <>
                 <div className="flex justify-end mb-2">
                   {res && (
-                    <button onClick={() => setShow3D(p => !p)}
-                      className="text-xs px-2.5 py-1 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-600">
+                    <Button variant="secondary" size="sm" onClick={() => setShow3D(p => !p)}>
                       {show3D ? '2D' : '3D'} View
-                    </button>
+                    </Button>
                   )}
                 </div>
                 {res ? (
@@ -469,10 +475,10 @@ export default function BeamDesign() {
                 <>
                   <UtilisationBars checks={buildChecks(inp, res, factors, runWith)} title="Check utilisation" />
                   {!suggestion && (
-                    <button onClick={optimise}
-                      className="mt-3 w-full text-xs font-semibold text-blue-600 border border-blue-200 bg-blue-50 hover:bg-blue-100 py-2 rounded-xl transition-colors">
+                    <Button variant="secondary" size="sm" onClick={optimise} fullWidth
+                      className="mt-3 !text-blue-600 !border-blue-200 !bg-blue-50 hover:!bg-blue-100 rounded-xl">
                       Suggest optimal parameters
-                    </button>
+                    </Button>
                   )}
                   {suggestion && (
                     <OptimiseSuggestion

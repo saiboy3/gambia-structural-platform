@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { Square } from 'lucide-react';
 import Card from '../ui/Card';
+import Button from '../ui/Button';
 import InputField, { SelectField } from '../ui/InputField';
 import HelpTooltip from '../ui/HelpTooltip';
 import Badge from '../ui/Badge';
@@ -8,8 +10,10 @@ import UtilisationBars from '../visuals/UtilisationBars';
 import type { UtilCheck } from '../visuals/UtilisationBars';
 import SaveDesignPanel from '../ui/SaveDesignPanel';
 import ProjectSelector from '../projects/ProjectSelector';
+import CalcSheet from '../ui/CalcSheet';
 import { getMaterial } from '../../utils/materials';
 import { designFlatSlab } from '../../utils/flatSlabCalculations';
+import { flatSlabCalcNotes } from '../../utils/calcNotesGeotechSlab';
 import OptimiseSuggestion from '../ui/OptimiseSuggestion';
 import { useBuildingCode } from '../../context/BuildingCodeContext';
 import type { ConcreteGrade, RebarGrade } from '../../types/structural';
@@ -188,6 +192,13 @@ export default function FlatSlabDesign() {
 
   return (
     <div className="space-y-3">
+      <div className="bg-gradient-to-br from-emerald-600 to-emerald-900 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <Square size={22} />
+          <h1 className="text-xl font-bold">Flat Slab Design</h1>
+        </div>
+        <p className="text-emerald-200 text-sm">Flat slab design to EC2 Annex I with punching shear and deflection checks</p>
+      </div>
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-xs text-slate-500">Project:</span>
         <ProjectSelector />
@@ -254,10 +265,9 @@ export default function FlatSlabDesign() {
               onChange={v => setMat(inp.material.concrete, v)}
               options={['B500B','B500C'].map(r => ({ value: r, label: r }))} />
           </div>
-          <button onClick={() => setRes(designFlatSlab(inp, factors))}
-            className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 rounded-lg">
+          <Button onClick={() => setRes(designFlatSlab(inp, factors))} fullWidth className="mt-4">
             Design Flat Slab
-          </button>
+          </Button>
         </Card>
 
         {/* Results */}
@@ -296,6 +306,11 @@ export default function FlatSlabDesign() {
                   <p key={i} className={`text-xs ${m.startsWith('FAIL') ? 'text-red-600' : m.startsWith('WARN') ? 'text-amber-600' : 'text-emerald-600'}`}>{m}</p>
                 ))}
               </div>
+              <CalcSheet
+                title="Flat Slab Calculation Sheet"
+                codeLabel={factors.label}
+                steps={flatSlabCalcNotes(inp, res, factors)}
+              />
               <SaveDesignPanel memberType="slab"
                 inputs={inp as unknown as Record<string, unknown>}
                 results={res as unknown as Record<string, unknown>} />
@@ -335,10 +350,10 @@ export default function FlatSlabDesign() {
               <>
                 <UtilisationBars checks={checks} title="Capacity checks" />
                 {!suggestion && (
-                  <button onClick={optimise}
-                    className="mt-3 w-full text-xs font-semibold text-blue-600 border border-blue-200 bg-blue-50 hover:bg-blue-100 py-2 rounded-xl transition-colors">
+                  <Button onClick={optimise} variant="ghost" size="sm" fullWidth
+                    className="mt-3 !text-blue-600 !border-blue-200 !bg-blue-50 hover:!bg-blue-100 rounded-xl">
                     Suggest optimal parameters
-                  </button>
+                  </Button>
                 )}
                 {suggestion && (
                   <OptimiseSuggestion

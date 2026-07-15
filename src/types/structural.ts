@@ -152,6 +152,8 @@ export interface FoundationResults {
   barsBot: { dia: number; spacing: number; As: number };
   punchingOK: boolean;
   bendingOK: boolean;
+  FoS_sliding: number;   // base friction resistance / HEd
+  slidingOK: boolean;
   status: 'OK' | 'FAIL' | 'WARN';
   messages: string[];
 }

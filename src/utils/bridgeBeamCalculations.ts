@@ -99,7 +99,7 @@ export function designBridgeBeam(inp: BridgeBeamInputs, cf: CodeFactors): Bridge
   const K = (Med * 1e6) / (fck * beff * d * d);
   if (K > 0.167) msgs.push('WARN: K > 0.167 — over-reinforced or compression zone in web; increase depth');
 
-  const z = Math.min(d * (0.5 + Math.sqrt(0.25 - K / 1.134)), 0.95 * d);
+  const z = Math.min(d * (0.5 + Math.sqrt(Math.max(0, 0.25 - K / 1.134))), 0.95 * d);
   const As_req = (Med * 1e6) / (fyd * z);
   const As_min = Math.max(0.26 * Math.sqrt(fck) / fyk * bw * d, 0.0013 * bw * d);
   const As_design = Math.max(As_req, As_min);
@@ -135,7 +135,7 @@ export function designBridgeBeam(inp: BridgeBeamInputs, cf: CodeFactors): Bridge
 
   // ── Deflection (SLS) ─────────────────────────────────────────────────────
   const wSLS = (gk + qk) * 1;  // kN/m (characteristic)
-  const delta = (5 * wSLS / 1000 * (span * 1000) ** 4) / (384 * 33500 * bw * d ** 3 / 12);  // mm
+  const delta = (5 * wSLS * (span * 1000) ** 4) / (384 * 33500 * bw * d ** 3 / 12);  // mm (wSLS kN/m ≡ N/mm)
   const deltaLimit = (span * 1000) / 400;  // L/400 for bridges
   const deflectionOK = delta <= deltaLimit;
 

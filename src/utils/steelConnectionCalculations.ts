@@ -67,6 +67,8 @@ export interface ConnectionResults {
   bearing_stress: number;  // MPa — actual bearing
   bearing_limit: number;   // MPa — 0.67×fck_grout or 0.6×fck
   bearingOK: boolean;
+  NcRd_column: number;     // kN — column squash (axial) capacity
+  util_column_axial: number;
   // Weld
   weldSize: number;      // mm — minimum fillet weld
   weldUtil: number;
@@ -146,6 +148,16 @@ export function designConnection(inp: ConnectionInputs): ConnectionResults {
     bearing_limit = 0.67 * inp.fck_grout;
   }
 
+  // ── Column squash capacity check (EC3 6.2.4) — base plate axial load
+  // must not exceed the column shaft's own compression resistance ─────────
+  const NcRd_column = (inp.columnA * inp.columnFy) / (10 * gammaM0);  // kN (A cm², fy MPa)
+  const util_column_axial = inp.type === 'base-plate' ? Math.abs(Ned) / NcRd_column : 0;
+
+  if (inp.type === 'base-plate') {
+    if (util_column_axial > 1) msgs.push(`FAIL: Column squash capacity ${(util_column_axial * 100).toFixed(0)}% — NEd exceeds column Nc,Rd=${NcRd_column.toFixed(0)}kN`);
+    else msgs.push(`PASS: Column axial ${(util_column_axial * 100).toFixed(0)}% of Nc,Rd=${NcRd_column.toFixed(0)}kN`);
+  }
+
   // ── Fillet weld size ──────────────────────────────────────────────────────
   // EC3 4.5.3: weld throat a, resistance fw = fvw = fu/(sqrt(3)×β_w×γM2)
   // Assume plate welded on two sides; effective weld length = plate height × 2
@@ -171,7 +183,10 @@ export function designConnection(inp: ConnectionInputs): ConnectionResults {
     VbsRd: +VbsRd.toFixed(1), util_block: +util_block.toFixed(3),
     bearing_stress: +bearing_stress.toFixed(3),
     bearing_limit: +bearing_limit.toFixed(2),
-    bearingOK, weldSize, weldUtil: +weldUtil.toFixed(3),
+    bearingOK,
+    NcRd_column: +NcRd_column.toFixed(1),
+    util_column_axial: +util_column_axial.toFixed(3),
+    weldSize, weldUtil: +weldUtil.toFixed(3),
     messages: msgs,
   };
 }

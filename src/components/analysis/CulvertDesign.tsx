@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Waves } from 'lucide-react';
+import Button from '../ui/Button';
 import Card from '../ui/Card';
 import InputField, { SelectField } from '../ui/InputField';
 import HelpTooltip from '../ui/HelpTooltip';
@@ -11,6 +13,8 @@ import ProjectSelector from '../projects/ProjectSelector';
 import { designCulvert } from '../../utils/culvertCalculations';
 import { useBuildingCode } from '../../context/BuildingCodeContext';
 import type { CulvertInputs } from '../../utils/culvertCalculations';
+import CalcSheet from '../ui/CalcSheet';
+import { culvertCalcNotes } from '../../utils/calcNotesTransport';
 
 const defaultInp: CulvertInputs = {
   span: 3.0,
@@ -137,6 +141,13 @@ export default function CulvertDesign() {
 
   return (
     <div className="space-y-3">
+      <div className="bg-gradient-to-br from-rose-600 to-rose-900 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <Waves size={22} />
+          <h1 className="text-xl font-bold">RC Box Culvert Design</h1>
+        </div>
+        <p className="text-rose-200 text-sm">Box culvert structural design including earth pressure, traffic loading and reinforcement</p>
+      </div>
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-xs text-slate-500">Project:</span>
         <ProjectSelector />
@@ -217,10 +228,9 @@ export default function CulvertDesign() {
               ]} />
           </div>
 
-          <button onClick={() => setRes(designCulvert(inp, factors))}
-            className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 rounded-lg">
+          <Button onClick={() => setRes(designCulvert(inp, factors))} fullWidth className="mt-4">
             Design Culvert
-          </button>
+          </Button>
         </Card>
 
         <Card title="Design Results" className="lg:col-span-1">
@@ -254,6 +264,11 @@ export default function CulvertDesign() {
                   <p key={i} className={`text-xs ${m.startsWith('FAIL') ? 'text-red-600' : m.startsWith('WARN') ? 'text-amber-600' : 'text-emerald-600'}`}>{m}</p>
                 ))}
               </div>
+              <CalcSheet
+                title="Culvert Calculation Sheet"
+                codeLabel={factors.label}
+                steps={culvertCalcNotes(inp, res, factors)}
+              />
               <SaveDesignPanel memberType="foundation"
                 inputs={inp as unknown as Record<string, unknown>}
                 results={res as unknown as Record<string, unknown>} />

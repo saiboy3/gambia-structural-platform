@@ -58,7 +58,7 @@ export function designBeam(inp: BeamInputs, code: Partial<CodeFactors> = {}): Be
         msgs.push('WARN: Flange in compression — section doubly reinforced');
         AsReq = (Med * 1e6) / (fyd * d * 0.82);
       } else {
-        const z = Math.min(d * (0.5 + Math.sqrt(0.25 - K / 1.134)), 0.95 * d);
+        const z = Math.min(d * (0.5 + Math.sqrt(Math.max(0, 0.25 - K / 1.134))), 0.95 * d);
         AsReq = (Med * 1e6) / (fyd * z);
       }
       x = (AsReq * fyd) / (0.8 * bf * fcd);
@@ -69,7 +69,7 @@ export function designBeam(inp: BeamInputs, code: Partial<CodeFactors> = {}): Be
       const Mw = Med - Mf;
       const Kw = (Mw * 1e6) / (fck * bw * d * d);
       if (Kw > 0.167) msgs.push('WARN: T-beam web over-stressed — increase section');
-      const zw = Math.min(d * (0.5 + Math.sqrt(0.25 - Kw / 1.134)), 0.95 * d);
+      const zw = Math.min(d * (0.5 + Math.sqrt(Math.max(0, 0.25 - Kw / 1.134))), 0.95 * d);
       const As_flange = (Mf * 1e6) / (fyd * (d - hf / 2));
       const As_web    = (Mw * 1e6) / (fyd * zw);
       AsReq = As_flange + As_web;
@@ -84,7 +84,7 @@ export function designBeam(inp: BeamInputs, code: Partial<CodeFactors> = {}): Be
       msgs.push('WARN: Section doubly reinforced — increase depth');
       AsReq = (Med * 1e6) / (fyd * d * 0.82);
     } else {
-      const z = Math.min(d * (0.5 + Math.sqrt(0.25 - K / 1.134)), 0.95 * d);
+      const z = Math.min(d * (0.5 + Math.sqrt(Math.max(0, 0.25 - K / 1.134))), 0.95 * d);
       AsReq = (Med * 1e6) / (fyd * z);
     }
     x = (AsReq * fyd) / (0.8 * bw * fcd);
@@ -107,7 +107,7 @@ export function designBeam(inp: BeamInputs, code: Partial<CodeFactors> = {}): Be
   if (!shearOK) {
     const VRd_needed = Ved - vRdc;
     const Asw_s = (VRd_needed * 1000) / (fyd * 0.9 * d);
-    stirSpacing = Math.min(200, Math.floor((2 * barArea(diaStir)) / Asw_s * 1000 / 10) * 10);
+    stirSpacing = Math.min(200, Math.floor((2 * barArea(diaStir)) / Asw_s / 10) * 10);
     shearOK = stirSpacing >= 50;
     if (!shearOK) msgs.push('FAIL: Shear links too close — increase section size');
   }

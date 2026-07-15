@@ -1,11 +1,19 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --shadow-elevated: 0 1px 2px rgba(15,23,42,.04), 0 8px 24px -8px rgba(15,23,42,.12);
+  --shadow-elevated-lg: 0 2px 4px rgba(15,23,42,.04), 0 16px 40px -12px rgba(15,23,42,.18);
+}
+
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background: #f1f5f9;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(100,116,139,.14) 1px, transparent 0) 0 0/22px 22px,
+    #f1f5f9;
   color: #1e293b;
 }
 
@@ -16,6 +24,162 @@ body {
 ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
+/* ─── Commercial-grade surface polish ─────────────────────────────────────
+   Applied via the existing utility classes every page already uses, so the
+   whole app is elevated without touching each module individually. */
+.shadow-sm { box-shadow: var(--shadow-elevated) !important; }
+
+/* Signature page-header treatment: subtle blueprint grid + corner mark,
+   layered on top of each module's own colour without changing the colour. */
+.bg-gradient-to-br,
+.bg-gradient-to-r {
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-elevated-lg);
+  isolation: isolate;
+}
+.bg-gradient-to-br::before,
+.bg-gradient-to-r::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: .5;
+  background-image:
+    linear-gradient(rgba(255,255,255,.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.08) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(to bottom right, black, transparent 75%);
+}
+.bg-gradient-to-br::after,
+.bg-gradient-to-r::after {
+  content: '';
+  position: absolute;
+  top: -40%;
+  right: -8%;
+  z-index: 0;
+  width: 220px;
+  height: 220px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(255,255,255,.16), transparent 70%);
+}
+.bg-gradient-to-br > *,
+.bg-gradient-to-r > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Segmented control (mode toggles / filter chips) — same literal utility
+   combo used on every page, styled once so it reads as one deliberate
+   component instead of a plain button row. */
+.bg-slate-100.rounded-xl.p-1 {
+  background: #eef1f6;
+  box-shadow: inset 0 1px 2px rgba(15,23,42,.06);
+  border: 1px solid rgba(15,23,42,.04);
+}
+button.bg-white.shadow.text-slate-800,
+button.bg-white.shadow.text-blue-700 {
+  box-shadow: 0 1px 1px rgba(15,23,42,.04), 0 4px 10px -4px rgba(15,23,42,.18) !important;
+  border: 1px solid rgba(15,23,42,.05);
+}
+
+/* ─── Print ────────────────────────────────────────────────────────────────
+   Goal: print only the relevant report content — no sidebar/topbar/nav,
+   no buttons or modals, clean page boundaries with sensible breaks. */
+@page {
+  size: A4;
+  margin: 14mm 12mm;
+}
+
 @media print {
-  .no-print { display: none !important; }
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  html, body, #root {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  /* App chrome — never relevant on paper */
+  .no-print,
+  aside,
+  header,
+  .fixed,
+  button {
+    display: none !important;
+  }
+
+  /* Let content reflow across pages instead of being clipped to one viewport */
+  .flex.h-screen,
+  .overflow-hidden,
+  .overflow-y-auto,
+  .overflow-x-auto {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  /* Coloured gradient page headers → plain, ink-friendly report headers */
+  .bg-gradient-to-br,
+  .bg-gradient-to-r {
+    background: #fff !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: none !important;
+  }
+  .bg-gradient-to-br *,
+  .bg-gradient-to-r * {
+    color: inherit !important;
+  }
+
+  /* Collapse multi-column working layouts to one readable column */
+  .lg\:grid-cols-2,
+  .lg\:grid-cols-3,
+  .lg\:grid-cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+  .lg\:col-span-1,
+  .lg\:col-span-2,
+  .lg\:col-span-3 {
+    grid-column: auto !important;
+  }
+
+  /* Cards / panels: flatten chrome, avoid splitting mid-block where possible */
+  .shadow, .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl {
+    box-shadow: none !important;
+  }
+  .rounded-xl, .rounded-2xl {
+    border-color: #cbd5e1 !important;
+  }
+
+  /* Tables: repeat header on every page, keep rows intact */
+  table { border-collapse: collapse !important; }
+  thead { display: table-header-group; }
+  tfoot { display: table-footer-group; }
+  tr, td, th { break-inside: avoid; page-break-inside: avoid; }
+
+  /* Section-level break control utilities (opt-in via className) */
+  .print-break-before { break-before: page; page-break-before: always; }
+  .print-avoid-break   { break-inside: avoid; page-break-inside: avoid; }
+  .print-hidden        { display: none !important; }
+
+  a { text-decoration: none !important; color: inherit !important; }
+
+  /* Form fields read as plain report text, not editable widgets */
+  input, select, textarea {
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    -webkit-appearance: none;
+    appearance: none;
+    color: #0f172a !important;
+  }
 }

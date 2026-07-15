@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Save, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, Save, X, DollarSign } from 'lucide-react';
 import { getItem, setItem, generateId, KEYS } from '../../utils/storage';
+import Button, { IconButton } from '../ui/Button';
 import { DEFAULT_COST_ITEMS } from '../../data/defaultCostItems';
 import type { CostItem, CostCategory } from '../../types/app';
 
@@ -70,6 +71,13 @@ export default function CostDatabase() {
 
   return (
     <div className="space-y-4">
+      <div className="bg-gradient-to-br from-lime-600 to-lime-900 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <DollarSign size={22} />
+          <h1 className="text-xl font-bold">Cost Rate Database</h1>
+        </div>
+        <p className="text-lime-200 text-sm">Manage current GMD unit rates for materials, labour and plant by category</p>
+      </div>
       {/* Toolbar */}
       <div className="flex flex-wrap gap-2 justify-between items-center">
         <div className="flex gap-2 flex-wrap">
@@ -83,10 +91,9 @@ export default function CostDatabase() {
             {Object.entries(CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
         </div>
-        <button onClick={() => { setShowAdd(true); setEditForm({ quarter: quarterFilter }); }}
-          className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-xl">
-          <Plus size={14} /> Add Rate
-        </button>
+        <Button onClick={() => { setShowAdd(true); setEditForm({ quarter: quarterFilter }); }} icon={<Plus size={14} />}>
+          Add Rate
+        </Button>
       </div>
 
       {/* Add form */}
@@ -130,11 +137,8 @@ export default function CostDatabase() {
             </div>
           </div>
           <div className="flex gap-2 mt-3">
-            <button onClick={addItem} className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg">
-              <Save size={13} /> Save
-            </button>
-            <button onClick={() => { setShowAdd(false); setEditForm({}); }}
-              className="px-4 py-2 text-sm border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-50">Cancel</button>
+            <Button onClick={addItem} size="sm" icon={<Save size={13} />}>Save</Button>
+            <Button onClick={() => { setShowAdd(false); setEditForm({}); }} variant="secondary" size="sm">Cancel</Button>
           </div>
         </div>
       )}
@@ -168,8 +172,8 @@ export default function CostDatabase() {
                     <td className="px-3 py-1.5 hidden md:table-cell"><input className="w-full border border-blue-200 rounded px-2 py-1 text-xs outline-none" value={editForm.source ?? ''} onChange={e => setEditForm(p => ({ ...p, source: e.target.value }))} /></td>
                     <td className="px-3 py-1.5">
                       <div className="flex gap-1">
-                        <button onClick={saveEdit} className="text-blue-600 hover:text-blue-800"><Save size={12} /></button>
-                        <button onClick={cancelEdit} className="text-slate-400 hover:text-slate-600"><X size={12} /></button>
+                        <IconButton onClick={saveEdit} tone="primary"><Save size={12} /></IconButton>
+                        <IconButton onClick={cancelEdit}><X size={12} /></IconButton>
                       </div>
                     </td>
                   </tr>
@@ -181,8 +185,8 @@ export default function CostDatabase() {
                     <td className="px-3 py-2 text-slate-400 hidden md:table-cell">{item.source}</td>
                     <td className="px-3 py-2">
                       <div className="flex gap-1">
-                        <button onClick={() => startEdit(item)} className="text-slate-400 hover:text-slate-600"><Edit2 size={12} /></button>
-                        <button onClick={() => deleteItem(item.id)} className="text-slate-400 hover:text-red-500"><Trash2 size={12} /></button>
+                        <IconButton onClick={() => startEdit(item)}><Edit2 size={12} /></IconButton>
+                        <IconButton onClick={() => deleteItem(item.id)} tone="danger"><Trash2 size={12} /></IconButton>
                       </div>
                     </td>
                   </tr>

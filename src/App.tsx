@@ -38,6 +38,9 @@ import WorkedExamples from './components/reference/WorkedExamples';
 import UnitConverter from './components/tools/UnitConverter';
 import CostDatabase from './components/business/CostDatabase';
 import StaffDashboard from './components/business/StaffDashboard';
+import InvoiceManager from './components/accounting/InvoiceManager';
+import ExpenseLog from './components/accounting/ExpenseLog';
+import FinancialSummary from './components/accounting/FinancialSummary';
 import DrawingRegister from './components/projects/DrawingRegister';
 import LoginScreen from './components/auth/LoginScreen';
 import DesignWizard from './components/wizard/DesignWizard';
@@ -57,7 +60,8 @@ type Page =
   | 'boq' | 'projects' | 'project-detail' | 'drawing-register'
   | 'cube-tests' | 'checklists' | 'site-investigation'
   | 'code-reference' | 'unit-converter' | 'worked-examples'
-  | 'cost-database' | 'staff-dashboard';
+  | 'cost-database' | 'staff-dashboard'
+  | 'invoices' | 'expenses' | 'financial-summary';
 
 const pageTitle: Record<Page, string> = {
   dashboard: 'Dashboard', quick: 'Quick Design', loads: 'Load Calculator',
@@ -79,6 +83,7 @@ const pageTitle: Record<Page, string> = {
   'code-reference': 'Code Quick Reference', 'unit-converter': 'Unit Converter',
   'worked-examples': 'Worked Examples Library',
   'cost-database': 'Cost Rate Database', 'staff-dashboard': 'Staff & HR Dashboard',
+  invoices: 'Invoice Manager', expenses: 'Expense Log', 'financial-summary': 'Financial Summary',
 };
 
 // ─── Role-based access control ────────────────────────────────────────────────
@@ -91,6 +96,8 @@ const PAGE_MIN_ROLE: Partial<Record<Page, UserRole>> = {
   projects: 'senior', 'project-detail': 'senior', 'drawing-register': 'senior',
   // Business — principal only
   'cost-database': 'principal', 'staff-dashboard': 'principal',
+  // Accounting — principal only
+  invoices: 'principal', expenses: 'principal', 'financial-summary': 'principal',
 };
 
 function canAccess(page: Page, role: UserRole): boolean {
@@ -161,26 +168,24 @@ const NAV_STRUCTURE: NavGroupDef[] = [
     ],
   },
   {
-    kind: 'flat', label: 'Projects & QA', minRole: 'senior',
+    kind: 'flat', label: 'Projects & Site',
     items: [
-      { id: 'projects',         label: 'Project Register',  icon: FolderOpen },
-      { id: 'drawing-register', label: 'Drawing Register',  icon: ImageIcon },
+      { id: 'projects',           label: 'Project Register',      icon: FolderOpen },
+      { id: 'drawing-register',   label: 'Drawing Register',      icon: ImageIcon },
+      { id: 'site-investigation', label: 'Site Investigation',    icon: Hammer },
+      { id: 'cube-tests',         label: 'Cube Test Log',         icon: FlaskConical },
+      { id: 'checklists',         label: 'Inspection Checklists', icon: ClipboardCheck },
+      { id: 'boq',                label: 'Bill of Quantities',    icon: FileText },
     ],
   },
   {
-    kind: 'flat', label: 'Site & Quality',
+    kind: 'flat', label: 'Business & Finance', minRole: 'principal',
     items: [
-      { id: 'site-investigation', label: 'Site Investigation',      icon: Hammer },
-      { id: 'cube-tests',         label: 'Cube Test Log',           icon: FlaskConical },
-      { id: 'checklists',         label: 'Inspection Checklists',   icon: ClipboardCheck },
-      { id: 'boq',                label: 'Bill of Quantities',       icon: FileText },
-    ],
-  },
-  {
-    kind: 'flat', label: 'Business', minRole: 'principal',
-    items: [
-      { id: 'cost-database',   label: 'Cost Database',   icon: DollarSign },
-      { id: 'staff-dashboard', label: 'Staff Dashboard', icon: Users },
+      { id: 'invoices',          label: 'Invoice Manager',   icon: FileText },
+      { id: 'expenses',          label: 'Expense Log',       icon: DollarSign },
+      { id: 'financial-summary', label: 'Financial Summary', icon: BarChart3 },
+      { id: 'cost-database',     label: 'Cost Database',     icon: DollarSign },
+      { id: 'staff-dashboard',   label: 'Staff Dashboard',   icon: Users },
     ],
   },
   {
@@ -270,7 +275,7 @@ function NavItemButton({ item, active, locked, onNavigate }:
     <button
       onClick={() => onNavigate(item.id)}
       title={locked ? `Requires ${locked ? 'elevated' : ''} privileges` : undefined}
-      className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-xs rounded-md mx-1 transition-all
+      className={`relative w-full flex items-center gap-2.5 px-3 py-1.5 text-xs rounded-md mx-1 transition-all
         ${active
           ? 'bg-blue-600 text-white font-semibold'
           : locked
@@ -278,6 +283,7 @@ function NavItemButton({ item, active, locked, onNavigate }:
             : 'text-slate-400 hover:text-white hover:bg-slate-800'
         }`}
     >
+      {active && <span className="absolute left-0 top-1 bottom-1 w-0.5 rounded-full bg-blue-300" />}
       <Icon size={13} className={active ? 'text-white' : locked ? 'text-slate-600' : ''} />
       <span className="flex-1 text-left truncate">{item.label}</span>
       {active && <ChevronRight size={11} />}
@@ -341,9 +347,17 @@ function Sidebar({ page, onNavigate, onClose, open }:
 
       {/* Logo */}
       <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-700/60 shrink-0">
-        <div>
-          <p className="text-white font-bold text-sm leading-tight tracking-tight">Gambia Structural</p>
-          <p className="text-slate-500 text-[10px] mt-0.5 tracking-wide">ENGINEERING PLATFORM</p>
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-700 shadow-lg shadow-blue-950/50 flex items-center justify-center shrink-0 ring-1 ring-white/10">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2 L22 20 L17.5 20 L12 9.5 L6.5 20 L2 20 Z" fill="white" />
+              <path d="M12 12.5 L15.5 20 L8.5 20 Z" fill="white" fillOpacity=".55" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-white font-bold text-sm leading-tight tracking-tight">Arch</p>
+            <p className="text-slate-500 text-[10px] mt-0.5 tracking-wide">ENGINEERING PLATFORM</p>
+          </div>
         </div>
         <button onClick={onClose} className="lg:hidden text-slate-500 hover:text-white p-1">
           <X size={15} />
@@ -503,7 +517,7 @@ function AppInner() {
           {/* Breadcrumb-style title */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 text-xs text-slate-400">
-              <span>Gambia Structural</span>
+              <span>Arch</span>
               <ChevronRight size={11} />
               <span className="text-slate-600 font-medium truncate">{pageTitle[page]}</span>
             </div>
@@ -562,6 +576,9 @@ function AppInner() {
               {page === 'unit-converter'     && <UnitConverter />}
               {page === 'cost-database'      && <CostDatabase />}
               {page === 'staff-dashboard'    && <StaffDashboard />}
+              {page === 'invoices'           && <InvoiceManager />}
+              {page === 'expenses'           && <ExpenseLog />}
+              {page === 'financial-summary'  && <FinancialSummary />}
             </>
           )}
         </main>

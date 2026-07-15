@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, MapPin, TrendingDown } from 'lucide-react';
+import { Plus, Trash2, MapPin, TrendingDown, Hammer } from 'lucide-react';
 import Card from '../ui/Card';
 import { getItem, setItem, generateId, KEYS } from '../../utils/storage';
+import Button, { IconButton } from '../ui/Button';
 import { useProject } from '../../context/ProjectContext';
 import type { SiteInvestigationRecord } from '../../types/app';
 
@@ -72,6 +73,13 @@ export default function SiteInvestigation() {
 
   return (
     <div className="space-y-4">
+      <div className="bg-gradient-to-br from-amber-600 to-amber-900 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <Hammer size={22} />
+          <h1 className="text-xl font-bold">Site Investigation Log</h1>
+        </div>
+        <p className="text-amber-200 text-sm">Log borehole, trial pit and CPT data for site ground condition records</p>
+      </div>
       {/* Toolbar */}
       <div className="flex flex-wrap gap-2 justify-between items-center">
         <select className="border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none"
@@ -79,10 +87,7 @@ export default function SiteInvestigation() {
           <option value="all">All projects</option>
           {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
-        <button onClick={openAdd}
-          className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-xl">
-          <Plus size={14} /> New Investigation
-        </button>
+        <Button onClick={openAdd} icon={<Plus size={14} />}>New Investigation</Button>
       </div>
 
       {/* Add form */}
@@ -156,7 +161,7 @@ export default function SiteInvestigation() {
                     <span className="font-semibold text-slate-600 w-14">0–{l.depth}m</span>
                     <span className="text-slate-700 flex-1">{l.soilType} — {l.description}</span>
                     {l.nValue != null && <span className="text-slate-400">N={l.nValue}</span>}
-                    <button onClick={() => removeLayer(i)} className="text-slate-300 hover:text-red-500 ml-1"><Trash2 size={11} /></button>
+                    <IconButton onClick={() => removeLayer(i)} tone="danger" className="ml-1 !p-0.5"><Trash2 size={11} /></IconButton>
                   </div>
                 ))}
               </div>
@@ -186,18 +191,15 @@ export default function SiteInvestigation() {
                   placeholder="SPT" value={layerForm.nValue}
                   onChange={e => setLayerForm(p => ({ ...p, nValue: e.target.value }))} />
               </div>
-              <button onClick={addLayer} className="px-3 py-1.5 bg-slate-700 text-white text-xs rounded-lg hover:bg-slate-800">
+              <Button onClick={addLayer} size="sm" className="!bg-slate-700 hover:!bg-slate-800 !border-slate-700">
                 + Layer
-              </button>
+              </Button>
             </div>
           </div>
 
           <div className="flex gap-2 mt-4">
-            <button onClick={addRecord} className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg">
-              Save Record
-            </button>
-            <button onClick={() => { setShowAdd(false); setForm({}); }}
-              className="px-4 py-2 text-sm border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-50">Cancel</button>
+            <Button onClick={addRecord}>Save Record</Button>
+            <Button onClick={() => { setShowAdd(false); setForm({}); }} variant="secondary">Cancel</Button>
           </div>
         </Card>
       )}
@@ -227,9 +229,9 @@ export default function SiteInvestigation() {
                 </div>
                 <p className="text-xs text-slate-500 mt-0.5">{projectName(r.projectId)} · {r.date} · {r.location}</p>
               </div>
-              <button onClick={() => deleteRecord(r.id)} className="text-slate-300 hover:text-red-500 shrink-0">
+              <IconButton onClick={() => deleteRecord(r.id)} tone="danger" className="shrink-0">
                 <Trash2 size={14} />
-              </button>
+              </IconButton>
             </div>
 
             <div className="flex gap-4 text-xs text-slate-600 mb-3">

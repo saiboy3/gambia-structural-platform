@@ -85,8 +85,8 @@ export function calcWind(inp: WindInputs): WindResults {
   const cpe_roof = -0.7;
 
   // Internal pressure coefficient
-  const cpi = inp.internalPressure === 'open' ? 0.7
-            : inp.internalPressure === 'dominant' ? 0.7
+  const cpi = inp.internalPressure === 'dominant' ? 0.7
+            : inp.internalPressure === 'open' ? 0.2
             : -0.3; // closed
 
   // Net pressures we = qp × (cpe − cpi)  kN/m²

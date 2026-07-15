@@ -48,13 +48,12 @@ export interface RetainingWallResults {
 
 export function designRetainingWall(inp: RetainingWallInputs, _cf: CodeFactors): RetainingWallResults {
   const msgs: string[] = [];
-  const { height: H, baseWidth: B, toeTip: a, stemWidth: sw, baseThk: hb,
+  const { type, height: H, baseWidth: B, toeTip: a, stemWidth: sw, baseThk: hb,
           soilDensity: γs, soilAngle: φ_deg,
           surcharge: q, concreteDensity: γc, cover } = inp;
   const { fcd, fyd } = inp.material;
 
   const φ = (φ_deg * Math.PI) / 180;
-  const heel = B - a - sw / 1000;        // m
 
   // Rankine active earth pressure coefficient
   const Ka = (1 - Math.sin(φ)) / (1 + Math.sin(φ));
@@ -67,31 +66,95 @@ export function designRetainingWall(inp: RetainingWallInputs, _cf: CodeFactors):
   // Vertical component — zero for vertical wall face
   const Pv = 0;
 
-  // Self-weight of concrete (stem + base)
-  const stemH = H - hb / 1000;
-  const W_stem = stemH * sw / 1000 * γc;
-  const W_base = B * hb / 1000 * γc;
-  const W_concrete = W_stem + W_base;
+  // Overturning moment about the toe — same driving force regardless of wall type
+  const overturningM = Ph_soil * H / 3 + Ph_surcharge * H / 2;
 
-  // Soil on heel
-  const W_soil = heel * H * γs;
+  let W_concrete: number, W_soil: number, V_total: number, restoringM: number;
+  let Med_stem = 0, d_stem = 0, As_stem = 0;
+  let Med_toe = 0, Med_heel = 0, As_toe = 0, As_heel = 0;
 
-  // Surcharge on heel
-  const W_surcharge = heel * q;
+  if (type === 'gravity') {
+    // ── Mass-concrete gravity wall ──────────────────────────────────────────
+    // Solid trapezoid: vertical front (toe) face, battered back face.
+    // "Stem width" is read as the crown (top) width; "Base width" is the
+    // full bottom width. No separate toe/heel slab — the whole section is
+    // concrete, so no reinforcement design is performed (relies on mass).
+    const topW = sw / 1000;   // m — crown width
+    const botW = B;           // m — base width
+    if (topW > botW) msgs.push('WARN: Top width exceeds base width — check geometry');
 
-  // Total vertical
-  const V_total = W_concrete + W_soil + W_surcharge + Pv;
+    const triW   = Math.max(botW - topW, 0);
+    const A_rect = topW * H;
+    const A_tri  = 0.5 * triW * H;
+    const W_rect = A_rect * γc;
+    const W_tri  = A_tri * γc;
+    W_concrete = W_rect + W_tri;
+    W_soil = 0;
+    V_total = W_concrete;
 
-  // Moments about toe (restoring) — individual moments
-  const x_stem    = a + sw / 2000;
-  const x_base    = B / 2;
-  const x_soilHeel = a + sw / 1000 + heel / 2;
-  const x_surcharge = x_soilHeel;
+    const x_rect = topW / 2;
+    const x_tri  = topW + triW / 3;
+    restoringM = W_rect * x_rect + W_tri * x_tri;
 
-  const restoringM = W_stem * x_stem + W_base * x_base + W_soil * x_soilHeel + W_surcharge * x_surcharge;
+    msgs.push('Gravity wall — mass concrete section, no flexural reinforcement required');
+  } else {
+    // ── Cantilever RC wall ───────────────────────────────────────────────────
+    const heel = B - a - sw / 1000;        // m
 
-  // Overturning moment about toe
-  const overturningM = Ph * H / 3 + Ph_surcharge * H / 2;
+    // Self-weight of concrete (stem + base)
+    const stemH = H - hb / 1000;
+    const W_stem = stemH * sw / 1000 * γc;
+    const W_base = B * hb / 1000 * γc;
+    W_concrete = W_stem + W_base;
+
+    // Soil on heel
+    W_soil = heel * H * γs;
+
+    // Surcharge on heel
+    const W_surcharge = heel * q;
+
+    // Total vertical
+    V_total = W_concrete + W_soil + W_surcharge + Pv;
+
+    // Moments about toe (restoring) — individual moments
+    const x_stem    = a + sw / 2000;
+    const x_base    = B / 2;
+    const x_soilHeel = a + sw / 1000 + heel / 2;
+    const x_surcharge = x_soilHeel;
+
+    restoringM = W_stem * x_stem + W_base * x_base + W_soil * x_soilHeel + W_surcharge * x_surcharge;
+
+    // Stem design — cantilever fixed at base of stem (top of footing), NOT at the
+    // footing underside. The earth pressure diagram governing stem bending only
+    // extends over the stem's own height (stemH), not the full retained height H
+    // used for the overall overturning check about the toe.
+    const Ph_soil_stem = 0.5 * Ka * γs * stemH * stemH;
+    const Ph_surcharge_stem = Ka * q * stemH;
+    Med_stem = Ph_soil_stem * stemH / 3 + Ph_surcharge_stem * stemH / 2;  // kNm/m — triangular soil block resultant at stemH/3, uniform surcharge resultant at stemH/2
+    d_stem = Math.max(sw - cover - 10, 100);
+    const z_stem = Math.min(0.9 * d_stem, d_stem - (d_stem - Math.sqrt(d_stem * d_stem - 2 * Med_stem * 1e6 / (fcd * 1000))) / 2);
+    As_stem = (Med_stem * 1e6) / (fyd * Math.min(z_stem, 0.95 * d_stem));
+
+    // Bearing needed below for toe/heel moments — computed after the shared block
+    // (uses qmax/qmin, so those are recomputed here from this branch's V_total/restoringM)
+    const xbar0 = (restoringM - overturningM) / V_total;
+    const e0 = Math.abs(B / 2 - xbar0);
+    const qmax0 = (V_total / B) * (1 + 6 * e0 / B);
+    const qmin0 = (V_total / B) * (1 - 6 * e0 / B);
+
+    // Toe moment (upward soil pressure minus base self-weight)
+    const q_toe_avg = (qmax0 + (qmax0 - (qmax0 - qmin0) * a / B)) / 2;
+    Med_toe = q_toe_avg * a * a / 2;
+
+    // Heel moment (downward soil + surcharge minus upward pressure)
+    const q_heel = (qmin0 + qmax0) / 2;   // simplified
+    const wd_heel = (W_soil + W_surcharge) / heel;
+    Med_heel = Math.max(0, (wd_heel - q_heel) * heel * heel / 2);
+
+    const d_base = hb - cover - 10;
+    As_toe  = (Med_toe  * 1e6) / (fyd * 0.9 * d_base);
+    As_heel = (Med_heel * 1e6) / (fyd * 0.9 * d_base);
+  }
 
   const FoS_overturning = restoringM / overturningM;
   const minFoS_OT = 1.5;
@@ -112,27 +175,16 @@ export function designRetainingWall(inp: RetainingWallInputs, _cf: CodeFactors):
   const qmax = (V_total / B) * (1 + 6 * eccentricity / B);
   const qmin = (V_total / B) * (1 - 6 * eccentricity / B);
 
-  // Stem design — cantilever fixed at base
-  const Med_stem = Ph * H / 3 + Ph_surcharge * H / 2;  // kNm/m
-  const d_stem = Math.max(sw - cover - 10, 100);
-  const z_stem = Math.min(0.9 * d_stem, d_stem - (d_stem - Math.sqrt(d_stem * d_stem - 2 * Med_stem * 1e6 / (fcd * 1000))) / 2);
-  const As_stem = (Med_stem * 1e6) / (fyd * Math.min(z_stem, 0.95 * d_stem));
-
-  // Toe moment (upward soil pressure minus base self-weight)
-  const q_toe_avg = (qmax + (qmax - (qmax - qmin) * a / B)) / 2;
-  const Med_toe = q_toe_avg * a * a / 2;
-
-  // Heel moment (downward soil + surcharge minus upward pressure)
-  const q_heel = (qmin + qmax) / 2;   // simplified
-  const wd_heel = (W_soil + W_surcharge) / heel;
-  const Med_heel = Math.max(0, (wd_heel - q_heel) * heel * heel / 2);
-
-  const d_base = hb - cover - 10;
-  const As_toe  = (Med_toe  * 1e6) / (fyd * 0.9 * d_base);
-  const As_heel = (Med_heel * 1e6) / (fyd * 0.9 * d_base);
+  // Middle-third (kern) check — the defining serviceability criterion for an
+  // unreinforced gravity wall, since the base cannot take tension.
+  if (type === 'gravity') {
+    const middleThird = B / 6;
+    if (eccentricity > middleThird) msgs.push(`FAIL: Eccentricity ${eccentricity.toFixed(3)}m exceeds middle third B/6=${middleThird.toFixed(3)}m — resultant outside kern, tension at heel`);
+    else msgs.push(`PASS: Eccentricity ${eccentricity.toFixed(3)}m within middle third (≤ ${middleThird.toFixed(3)}m)`);
+  }
 
   const status: RetainingWallResults['status'] =
-    FoS_overturning < minFoS_OT || FoS_sliding < minFoS_SL ? 'fail' :
+    msgs.some(m => m.startsWith('FAIL')) ? 'fail' :
     FoS_overturning < 2 || FoS_sliding < 2 ? 'warn' : 'pass';
 
   return {

@@ -95,7 +95,7 @@ function FoundationMesh({ inputs, results }: Props) {
 
 export default function Foundation3D(props: Props) {
   return (
-    <div className="w-full rounded-lg overflow-hidden bg-gradient-to-b from-slate-800 to-slate-900" style={{ height: 340 }}>
+    <div className="w-full rounded-xl overflow-hidden bg-gradient-to-b from-slate-800 to-slate-900 shadow-lg ring-1 ring-slate-700/50" style={{ height: 340 }}>
       <Canvas shadows camera={{ position: [7, 5, 7], fov: 45 }}>
         <ambientLight intensity={0.5} />
         <directionalLight position={[10, 10, 5]} intensity={1} castShadow />

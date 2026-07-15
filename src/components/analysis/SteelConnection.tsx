@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Link2 } from 'lucide-react';
+import Button from '../ui/Button';
 import Card from '../ui/Card';
 import InputField, { SelectField } from '../ui/InputField';
 import HelpTooltip from '../ui/HelpTooltip';
@@ -10,6 +12,9 @@ import SaveDesignPanel from '../ui/SaveDesignPanel';
 import ProjectSelector from '../projects/ProjectSelector';
 import { designConnection } from '../../utils/steelConnectionCalculations';
 import type { ConnectionInputs, ConnectionType } from '../../utils/steelConnectionCalculations';
+import { useBuildingCode } from '../../context/BuildingCodeContext';
+import CalcSheet from '../ui/CalcSheet';
+import { steelConnectionCalcNotes } from '../../utils/calcNotesSteel';
 
 const defaultInp: ConnectionInputs = {
   type: 'end-plate',
@@ -115,6 +120,7 @@ export default function SteelConnection() {
   const [inp, setInp] = useState<ConnectionInputs>(defaultInp);
   const [res, setRes] = useState<ReturnType<typeof designConnection> | null>(null);
   const [activeTab, setActiveTab] = useState<'sketch' | 'utilisation'>('sketch');
+  const { factors } = useBuildingCode();
 
   const set = (k: keyof ConnectionInputs, v: unknown) => setInp(p => ({ ...p, [k]: v }));
   const setBolt = (k: keyof ConnectionInputs['bolt'], v: unknown) =>
@@ -131,6 +137,8 @@ export default function SteelConnection() {
       hint: 'Increase bolt gauge (horizontal spacing) or add bolt rows to enlarge the shear-out path.' },
     ...(inp.type === 'base-plate' ? [{ label: 'Bearing on grout', demand: res.bearing_stress, capacity: res.bearing_limit, unit: 'MPa', note: 'σ / 0.67fck',
       hint: 'Stress under base plate exceeds grout capacity. Increase plate dimensions or use higher-strength grout.' }] : []),
+    ...(inp.type === 'base-plate' ? [{ label: 'Column squash capacity', demand: Math.abs(inp.Ned), capacity: res.NcRd_column, unit: 'kN', note: 'NEd / Nc,Rd',
+      hint: 'Axial load into the base plate exceeds the column shaft capacity. Increase column section.' }] : []),
   ] : [];
 
   const needsMoment = inp.type === 'end-plate';
@@ -138,6 +146,13 @@ export default function SteelConnection() {
 
   return (
     <div className="space-y-3">
+      <div className="bg-gradient-to-br from-slate-600 to-slate-900 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <Link2 size={22} />
+          <h1 className="text-xl font-bold">Steel Connections</h1>
+        </div>
+        <p className="text-slate-200 text-sm">Bolted and welded connection design for moment, shear and splice connections to EC3-1-8</p>
+      </div>
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-xs text-slate-500">Project:</span>
         <ProjectSelector />
@@ -220,13 +235,26 @@ export default function SteelConnection() {
                 <SelectField label="Grout/concrete fck" value={String(inp.fck_grout)}
                   onChange={v => set('fck_grout', +v)}
                   options={[20, 25, 30].map(f => ({ value: String(f), label: `C${f}/${f + 5}` }))} />
+
+                <div className="col-span-2">
+                  <p className="text-xs font-semibold text-slate-500 mb-1.5 mt-1">Column (for squash capacity check)</p>
+                </div>
+                <SelectField label="Column steel grade" value={String(inp.columnFy)}
+                  onChange={v => set('columnFy', +v)}
+                  options={[{ value: '275', label: 'S275' }, { value: '355', label: 'S355' }]} />
+                <div>
+                  <div className="flex items-center gap-0.5">
+                    <label className="text-xs font-medium text-slate-600">Column section area</label>
+                    <HelpTooltip title="Column cross-section area" text="Gross area of the column shaft, used to check the base plate axial load doesn't exceed the column's own squash capacity." typical="30–130 cm² for typical UB/UC sections" />
+                  </div>
+                  <InputField label="" unit="cm²" value={inp.columnA} onChange={v => set('columnA', +v)} min={10} />
+                </div>
               </>
             )}
           </div>
-          <button onClick={() => setRes(designConnection(inp))}
-            className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 rounded-lg">
+          <Button onClick={() => setRes(designConnection(inp))} fullWidth className="mt-4">
             Check Connection
-          </button>
+          </Button>
         </Card>
 
         {/* Results */}
@@ -253,6 +281,10 @@ export default function SteelConnection() {
                   <ResultRow label="Bearing stress" value={res.bearing_stress.toFixed(2)} unit="MPa" highlight />
                   <ResultRow label="Limit (0.67×fck)" value={res.bearing_limit.toFixed(2)} unit="MPa" />
                   <ResultRow label="Bearing" value={res.bearingOK ? '✓ Pass' : '✗ Fail'} />
+
+                  <p className="text-xs font-semibold text-slate-500 mt-3 mb-1">Column Squash Capacity</p>
+                  <ResultRow label="Nc,Rd (column)" value={res.NcRd_column.toFixed(0)} unit="kN" />
+                  <ResultRow label="Axial utilisation" value={`${(res.util_column_axial * 100).toFixed(0)}%`} highlight />
                 </>
               )}
 
@@ -265,6 +297,11 @@ export default function SteelConnection() {
                   <p key={i} className={`text-xs ${m.startsWith('FAIL') ? 'text-red-600' : m.startsWith('WARN') ? 'text-amber-600' : 'text-emerald-600'}`}>{m}</p>
                 ))}
               </div>
+              <CalcSheet
+                title="Steel Connection Calculation Sheet"
+                codeLabel={factors.label}
+                steps={steelConnectionCalcNotes(inp, res, factors)}
+              />
               <SaveDesignPanel memberType="beam"
                 inputs={inp as unknown as Record<string, unknown>}
                 results={res as unknown as Record<string, unknown>} />

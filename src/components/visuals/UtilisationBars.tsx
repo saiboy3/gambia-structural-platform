@@ -2,6 +2,7 @@
  * UtilisationBars — horizontal progress bars showing % utilisation per check
  * Green < 80%, Amber 80–100%, Red > 100%
  */
+import { CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 
 export interface QuickAction {
   label: string;        // e.g. "+50 mm depth"
@@ -71,32 +72,36 @@ export default function UtilisationBars({ checks, title }: Props) {
 
         // Status label
         const statusLabel = raw > 100 ? 'FAIL' : raw > 80 ? 'MARGINAL' : 'OK';
+        const StatusIcon = raw > 100 ? XCircle : raw > 80 ? AlertTriangle : CheckCircle2;
 
         return (
-          <div key={i} className={`rounded-xl border px-3 py-2.5 ${c.bg} ${c.border}`}>
+          <div key={i} className={`rounded-xl border px-3 py-2.5 shadow-sm ${c.bg} ${c.border}`}>
 
             {/* Header row */}
             <div className="flex items-start justify-between gap-2 mb-1.5">
-              <div className="min-w-0">
-                <span className="text-xs font-semibold text-slate-700 leading-tight">{chk.label}</span>
-                {chk.note && (
-                  <span className="text-[10px] text-slate-400 ml-1.5 font-mono">{chk.note}</span>
-                )}
+              <div className="min-w-0 flex items-start gap-1.5">
+                <StatusIcon size={13} className={`${c.text} shrink-0 mt-0.5`} />
+                <div className="min-w-0">
+                  <span className="text-xs font-semibold text-slate-700 leading-tight">{chk.label}</span>
+                  {chk.note && (
+                    <span className="text-[10px] text-slate-400 ml-1.5 font-mono">{chk.note}</span>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
-                <span className={`text-xs font-mono font-bold ${c.text}`}>
+                <span className={`text-xs font-mono font-bold tabular-nums ${c.text}`}>
                   {raw.toFixed(0)}%
                 </span>
-                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${c.badge}`}>
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ring-1 ring-black/5 ${c.badge}`}>
                   {statusLabel}
                 </span>
               </div>
             </div>
 
             {/* Progress bar */}
-            <div className="w-full bg-white/70 rounded-full h-2 overflow-hidden mb-1.5">
+            <div className="w-full bg-white/70 rounded-full h-2 overflow-hidden mb-1.5 shadow-inner ring-1 ring-black/5">
               <div
-                className={`h-2 rounded-full transition-all duration-500 ${c.bar}`}
+                className={`h-2 rounded-full transition-all duration-500 ${c.bar} shadow-sm`}
                 style={{ width: `${Math.min(u, 100)}%` }}
               />
             </div>

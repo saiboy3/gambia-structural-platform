@@ -69,6 +69,7 @@ export interface PortalFrameResults {
   // Rafter
   Med_rafter: number;    // kNm — max moment in rafter
   McRd_rafter: number;   // kNm — moment resistance
+  MbRd_rafter: number;   // kNm — LTB (buckling) resistance, χLT·McRd
   util_rafter: number;
   LTB_rafter: 'pass' | 'warn' | 'fail';
   // Column
@@ -144,7 +145,7 @@ export function designPortalFrame(inp: PortalFrameInputs): PortalFrameResults {
   const NEd_col = VEd_col;              // kN (vertical from rafter)
 
   const McRd_col = (column.Sx * fy) / (gammaM0 * 1000);  // kNm
-  const NcRd_col = (column.A * fy) / (gammaM0 * 100);    // kN (A in cm², fy MPa)
+  const NcRd_col = (column.A * fy) / (gammaM0 * 10);     // kN (A in cm², fy MPa)
 
   // Combined check (EC3 6.2.9 simplified): M/McRd + N/NcRd ≤ 1
   const util_col = Med_col / McRd_col + NEd_col / NcRd_col;
@@ -157,7 +158,7 @@ export function designPortalFrame(inp: PortalFrameInputs): PortalFrameResults {
   const Vtotal = VEd_col * 2;  // both columns
   const NHF = 0.005 * Vtotal;
   // Simplified sway check: assume column as cantilever
-  const EI_col = 210000 * column.Ix * 1e-4 * 1e6;  // N·mm² (Ix cm⁴ → mm⁴ × 1e4 → ×1e4, E N/mm²)
+  const EI_col = 210000 * column.Ix * 1e4;  // N·mm² (Ix cm⁴ → mm⁴ ×1e4, E N/mm²)
   const h_mm = height * 1000;
   const delta = inp.base === 'fixed'
     ? (NHF * 1000 * h_mm ** 3) / (12 * EI_col)
@@ -188,6 +189,7 @@ export function designPortalFrame(inp: PortalFrameInputs): PortalFrameResults {
     VEd_col: +VEd_col.toFixed(1),
     Med_rafter: +Med_rafter.toFixed(1),
     McRd_rafter: +McRd_rafter.toFixed(1),
+    MbRd_rafter: +MbRd_rafter.toFixed(1),
     util_rafter: +util_rafter.toFixed(3),
     LTB_rafter,
     Med_col: +Med_col.toFixed(1),

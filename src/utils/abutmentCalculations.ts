@@ -105,8 +105,9 @@ export function designAbutment(inp: AbutmentInputs, cf: CodeFactors): AbutmentRe
   else msgs.push(`PASS: Sliding FoS=${FoS_sliding.toFixed(2)} ≥ 1.5`);
 
   // ── Bearing pressure ─────────────────────────────────────────────────────
-  const eccentricity = Math.abs(restoring_moment - overturning_moment) / totalV - baseLength / 2;
-  const bearingPressure = (totalV / baseLength) * (1 + 6 * Math.abs(eccentricity) / baseLength);
+  const xbar = (restoring_moment - overturning_moment) / totalV;  // resultant distance from toe
+  const eccentricity = Math.abs(baseLength / 2 - xbar);
+  const bearingPressure = (totalV / baseLength) * (1 + 6 * eccentricity / baseLength);
   const bearingOK = bearingPressure <= inp.bearingCapacity;
 
   if (!bearingOK) msgs.push(`FAIL: Bearing ${bearingPressure.toFixed(0)} kPa > ${inp.bearingCapacity} kPa — increase base or improve foundation`);
@@ -123,7 +124,7 @@ export function designAbutment(inp: AbutmentInputs, cf: CodeFactors): AbutmentRe
 
   const K_stem = (Med_stem * 1e6) / (fck * 1000 * d_stem ** 2);
   if (K_stem > 0.167) msgs.push('WARN: Stem K > 0.167 — increase stem thickness');
-  const z_stem = Math.min(d_stem * (0.5 + Math.sqrt(0.25 - K_stem / 1.134)), 0.95 * d_stem);
+  const z_stem = Math.min(d_stem * (0.5 + Math.sqrt(Math.max(0, 0.25 - K_stem / 1.134))), 0.95 * d_stem);
   const As_stem = Math.max((Med_stem * 1e6) / (fyd * z_stem), 0.0013 * 1000 * d_stem);
   const bars_stem = chooseBarsPerMetre(As_stem);
 

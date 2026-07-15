@@ -5,6 +5,7 @@
  */
 import { useState } from 'react';
 import { ChevronRight, ChevronLeft, ArrowRight } from 'lucide-react';
+import Button from '../ui/Button';
 
 interface Props {
   onNavigate: (page: string) => void;
@@ -228,14 +229,13 @@ export default function DesignWizard({ onNavigate }: Props) {
         </div>
       )}
 
-      <button onClick={() => onNavigate(rec.page)}
-        className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm transition-colors">
+      <Button onClick={() => onNavigate(rec.page)} fullWidth className="rounded-xl py-3">
         Open {rec.title} <ArrowRight size={14} />
-      </button>
+      </Button>
 
-      <button onClick={reset} className="w-full text-xs text-slate-400 hover:text-slate-600 py-1">
+      <Button onClick={reset} variant="ghost" size="sm" fullWidth>
         ← Start over
-      </button>
+      </Button>
     </div>
   );
 
@@ -268,10 +268,9 @@ export default function DesignWizard({ onNavigate }: Props) {
 
       {/* Back nav */}
       {step > 0 && !done && (
-        <button onClick={() => setStep(s => s - 1)}
-          className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-600 px-1">
-          <ChevronLeft size={12} /> Back
-        </button>
+        <Button onClick={() => setStep(s => s - 1)} variant="ghost" size="sm" icon={<ChevronLeft size={12} />}>
+          Back
+        </Button>
       )}
     </div>
   );

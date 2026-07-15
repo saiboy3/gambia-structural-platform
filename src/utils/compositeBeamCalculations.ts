@@ -82,7 +82,7 @@ export function designCompositeBeam(inp: CompositeBeamInputs): CompositeBeamResu
 
   // ── Full composite moment resistance (EC4 6.2.1.2) ──────────────────────
   const Nc_full = (0.85 * fck / 1.5) * (beff * 1000) * hc / 1000;  // kN — max concrete force
-  const Na_full = (fyk / gammaM0) * sec.A * 100;                     // kN — steel yield force (A cm²)
+  const Na_full = (fyk / gammaM0) * sec.A * 100 / 1000;              // kN — steel yield force (A cm²)
   const Nc_eff = Math.min(Nc_full, Na_full);  // governing compression force
 
   // Plastic NA: assuming NA in concrete (concrete governs)
@@ -137,14 +137,14 @@ export function designCompositeBeam(inp: CompositeBeamInputs): CompositeBeamResu
   const wSLS_const = inp.deadLoadConst * inp.beamSpacing;  // kN/m
   const Ia = sec.Ix * 1e4;  // mm⁴
   const E_steel = 210000;   // MPa
-  const delta_const = (5 * wSLS_const / 1000 * (span * 1000) ** 4) / (384 * E_steel * Ia);  // mm
+  const delta_const = (5 * wSLS_const * (span * 1000) ** 4) / (384 * E_steel * Ia);  // mm (wSLS_const kN/m ≡ N/mm)
 
   // Composite stage (additional imposed load)
   // Use transformed section modulus (simplified: n = Ea/Ecm ~ 6-10)
   const n_ratio = E_steel / Ecm;
   const Icomp = Ia + (beff * 1000 / n_ratio) * hc ** 3 / 12 + (beff * 1000 / n_ratio) * hc * (sec.h / 2 + inp.deckDepth + hc / 2) ** 2;
   const wSLS_imposed = inp.liveLoad * inp.beamSpacing;  // kN/m
-  const delta_comp = (5 * wSLS_imposed / 1000 * (span * 1000) ** 4) / (384 * E_steel * Icomp);
+  const delta_comp = (5 * wSLS_imposed * (span * 1000) ** 4) / (384 * E_steel * Icomp);  // mm (wSLS_imposed kN/m ≡ N/mm)
 
   const delta_total = delta_const + delta_comp;
   const deltaLimit = (span * 1000) / 360;

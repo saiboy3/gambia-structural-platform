@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Layers } from 'lucide-react';
+import Button from '../ui/Button';
 import Card from '../ui/Card';
 import InputField, { SelectField } from '../ui/InputField';
 import HelpTooltip from '../ui/HelpTooltip';
@@ -10,6 +12,9 @@ import SaveDesignPanel from '../ui/SaveDesignPanel';
 import ProjectSelector from '../projects/ProjectSelector';
 import { designPortalFrame, PORTAL_SECTIONS } from '../../utils/portalFrameCalculations';
 import type { PortalFrameInputs } from '../../utils/portalFrameCalculations';
+import { useBuildingCode } from '../../context/BuildingCodeContext';
+import CalcSheet from '../ui/CalcSheet';
+import { portalFrameCalcNotes } from '../../utils/calcNotesSteel';
 
 const defaultInp: PortalFrameInputs = {
   span: 18,
@@ -229,6 +234,7 @@ export default function PortalFrame() {
   const [inp, setInp] = useState<PortalFrameInputs>(defaultInp);
   const [res, setRes] = useState<ReturnType<typeof designPortalFrame> | null>(null);
   const [activeTab, setActiveTab] = useState<'frame' | 'utilisation'>('frame');
+  const { factors } = useBuildingCode();
 
   const set = (k: keyof PortalFrameInputs, v: unknown) => setInp(p => ({ ...p, [k]: v }));
 
@@ -245,6 +251,13 @@ export default function PortalFrame() {
 
   return (
     <div className="space-y-3">
+      <div className="bg-gradient-to-br from-slate-600 to-slate-900 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <Layers size={22} />
+          <h1 className="text-xl font-bold">Steel Portal Frame</h1>
+        </div>
+        <p className="text-slate-200 text-sm">Rafter and column design for single-bay steel portal frames to EC3</p>
+      </div>
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-xs text-slate-500">Project:</span>
         <ProjectSelector />
@@ -340,10 +353,9 @@ export default function PortalFrame() {
             <SelectField label="Column section" value={inp.columnSection}
               onChange={v => set('columnSection', v)} options={sections} />
           </div>
-          <button onClick={() => setRes(designPortalFrame(inp))}
-            className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 rounded-lg">
+          <Button onClick={() => setRes(designPortalFrame(inp))} fullWidth className="mt-4">
             Design Portal Frame
-          </button>
+          </Button>
         </Card>
 
         {/* Results */}
@@ -378,6 +390,11 @@ export default function PortalFrame() {
                   <p key={i} className={`text-xs ${m.startsWith('FAIL') ? 'text-red-600' : m.startsWith('WARN') ? 'text-amber-600' : 'text-emerald-600'}`}>{m}</p>
                 ))}
               </div>
+              <CalcSheet
+                title="Portal Frame Calculation Sheet"
+                codeLabel={factors.label}
+                steps={portalFrameCalcNotes(inp, res, factors)}
+              />
               <SaveDesignPanel memberType="beam"
                 inputs={inp as unknown as Record<string, unknown>}
                 results={res as unknown as Record<string, unknown>} />

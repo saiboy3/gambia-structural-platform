@@ -121,8 +121,8 @@ function aciCombinations(v: LoadValues): Combination[] {
       type:'ULS', factors:{ Gk:0.9, Qk:0, Wk:1.0 },
       value: 0.9*D + 1.0*W },
     { id:'ACI-6', name:'ACI 6: Dead + Roof live',     equation:'1.2D + 1.6Lr + L',
-      type:'ULS', factors:{ Gk:1.2, Qk:1.0, Wk:0 },
-      value: 1.2*D + 1.6*0.5*L + L },  // Lr ≈ 0.5Qk simplified
+      type:'ULS', factors:{ Gk:1.2, Qk:1.8, Wk:0 },
+      value: 1.2*D + 1.6*0.5*L + L },  // Lr ≈ 0.5Qk simplified; effective Qk factor = 1.6×0.5 + 1.0 = 1.8
     { id:'ACI-SLS',name:'ACI Service',                equation:'D + L',
       type:'SLS', factors:{ Gk:1.0, Qk:1.0, Wk:0 },
       value: D + L },
@@ -177,13 +177,13 @@ function ibcCombinations(v: LoadValues): Combination[] {
     {
       id: 'IBC-U6', name: 'ASCE7 U6: Seismic governs',
       equation: '1.2D + 1.0E + 1.0L',
-      type: 'ULS', factors: { Gk: 1.2 + 0.2 * 0.1, Qk: 1.0, Wk: 0 },
+      type: 'ULS', factors: { Gk: 1.2 + 0.1, Qk: 1.0, Wk: 0 },
       value: 1.2 * D + E + 1.0 * L,
     },
     {
       id: 'IBC-U7', name: 'ASCE7 U7: Seismic uplift',
       equation: '0.9D − 1.0E',
-      type: 'ULS', factors: { Gk: 0.9, Qk: 0, Wk: 0 },
+      type: 'ULS', factors: { Gk: 0.9 - 0.1, Qk: 0, Wk: 0 },
       value: 0.9 * D - E,
     },
     // ── Service (ASD / SLS equivalent) — §2.4.1 ──────────────────────────

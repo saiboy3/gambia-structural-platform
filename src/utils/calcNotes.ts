@@ -599,7 +599,6 @@ export function foundationCalcNotes(
   cf:  Partial<CodeFactors> & { code?: string },
 ): CalcStep[] {
   const code = cf.code ?? 'EC2';
-  const γG   = cf.gammaG ?? 1.35;
   const { fck, fyd } = inp.material;
   const { columnB, columnH, Ned, selfWeight, soilBearing, cover } = inp;
   const Ntotal = Ned * (1 + selfWeight / 100);
@@ -608,7 +607,7 @@ export function foundationCalcNotes(
   const cx = columnB / 1000;
   const a  = (B - cx) / 2;
   const u1 = 2 * (columnB + columnH) + 2 * Math.PI * 2 * d;
-  const βVed = Ned * 1000 * γG * 1.15;
+  const βVed = Ned * 1000 * 1.15;
   const vEd  = βVed / (u1 * d);
   const ρl   = Math.min(barsBot.As / (1000 * d), 0.02);
   const k    = Math.min(1 + Math.sqrt(200 / d), 2.0);
@@ -641,8 +640,8 @@ export function foundationCalcNotes(
     { heading: '2. Net Soil Pressure (ULS)' },
     {
       label: 'Net upward pressure',
-      formula: 'qEd = γG · NEd / (L · B)',
-      working: `= ${n(γG)} × ${Ned} / (${n(L,2)} × ${n(B,2)})`,
+      formula: 'qEd = NEd / (L · B)  (NEd already the ULS design load)',
+      working: `= ${Ned} / (${n(L,2)} × ${n(B,2)})`,
       result: `${n(qEd,1)} kN/m²`,
       ref: r(code, 'EC7 §2.4.7', 'BS8004 §2.3', 'IBC §1806.2 / ASCE 7 §13', 'IBC §1806.2'),
     },
@@ -705,7 +704,7 @@ export function foundationCalcNotes(
     {
       label: 'Punching shear stress',
       formula: 'vEd = β·NEd / (u1 · d)  (β=1.15 eccentricity)',
-      working: `= 1.15 × ${Ned*1000*γG} / (${n0(u1)} × ${n0(d)})`,
+      working: `= 1.15 × ${Ned*1000} / (${n0(u1)} × ${n0(d)})`,
       result: `${n(vEd,4)} N/mm²`,
       ref: r(code, 'EC2 §6.4.3', 'BS8110 §3.7.7', 'ACI 318 §22.6.5', 'ACI 318 §22.6.5'),
     },

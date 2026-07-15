@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Layers } from 'lucide-react';
+import Button from '../ui/Button';
 import Card from '../ui/Card';
 import InputField, { SelectField } from '../ui/InputField';
 import HelpTooltip from '../ui/HelpTooltip';
@@ -11,6 +13,9 @@ import ProjectSelector from '../projects/ProjectSelector';
 import { designCompositeBeam } from '../../utils/compositeBeamCalculations';
 import { PORTAL_SECTIONS } from '../../utils/portalFrameCalculations';
 import type { CompositeBeamInputs } from '../../utils/compositeBeamCalculations';
+import { useBuildingCode } from '../../context/BuildingCodeContext';
+import CalcSheet from '../ui/CalcSheet';
+import { compositeBeamCalcNotes } from '../../utils/calcNotesSteel';
 
 const UB_SECTIONS = PORTAL_SECTIONS.filter(s => s.name.startsWith('UB'));
 
@@ -77,6 +82,7 @@ export default function CompositeBeam() {
   const [inp, setInp] = useState<CompositeBeamInputs>(defaultInp);
   const [res, setRes] = useState<ReturnType<typeof designCompositeBeam> | null>(null);
   const [activeTab, setActiveTab] = useState<'section' | 'utilisation'>('section');
+  const { factors } = useBuildingCode();
 
   const set = (k: keyof CompositeBeamInputs, v: unknown) => setInp(p => ({ ...p, [k]: v }));
 
@@ -93,6 +99,13 @@ export default function CompositeBeam() {
 
   return (
     <div className="space-y-3">
+      <div className="bg-gradient-to-br from-slate-600 to-slate-900 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <Layers size={22} />
+          <h1 className="text-xl font-bold">Composite Beam Design</h1>
+        </div>
+        <p className="text-slate-200 text-sm">Steel-concrete composite beam design to EC4 including shear connector sizing</p>
+      </div>
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-xs text-slate-500">Project:</span>
         <ProjectSelector />
@@ -159,10 +172,9 @@ export default function CompositeBeam() {
               onChange={v => set('studsPerRow', +v)}
               options={[{ value: '1', label: '1 per rib' }, { value: '2', label: '2 per rib' }]} />
           </div>
-          <button onClick={() => setRes(designCompositeBeam(inp))}
-            className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 rounded-lg">
+          <Button onClick={() => setRes(designCompositeBeam(inp))} fullWidth className="mt-4">
             Design Composite Beam
-          </button>
+          </Button>
         </Card>
 
         {/* Results */}
@@ -172,7 +184,7 @@ export default function CompositeBeam() {
               <div className="flex items-center gap-2 mb-3"><Badge status={res.status} /></div>
               <ResultRow label="Effective slab width (beff)" value={res.beff.toFixed(2)} unit="m" />
               <ResultRow label="Mpl,Rd (full composite)" value={res.Mpl_Rd.toFixed(0)} unit="kNm" />
-              <ResultRow label="Mpl,Rd (η={inp.interaction})" value={res.Mpl_partial.toFixed(0)} unit="kNm" highlight />
+              <ResultRow label={`Mpl,Rd (η=${inp.interaction})`} value={res.Mpl_partial.toFixed(0)} unit="kNm" highlight />
               <ResultRow label="MEd" value={res.Med.toFixed(0)} unit="kNm" />
               <ResultRow label="Bending utilisation" value={`${(res.util_bending * 100).toFixed(0)}%`} />
 
@@ -198,6 +210,11 @@ export default function CompositeBeam() {
                   <p key={i} className={`text-xs ${m.startsWith('FAIL') ? 'text-red-600' : m.startsWith('WARN') ? 'text-amber-600' : 'text-emerald-600'}`}>{m}</p>
                 ))}
               </div>
+              <CalcSheet
+                title="Composite Beam Calculation Sheet"
+                codeLabel={factors.label}
+                steps={compositeBeamCalcNotes(inp, res, factors)}
+              />
               <SaveDesignPanel memberType="beam"
                 inputs={inp as unknown as Record<string, unknown>}
                 results={res as unknown as Record<string, unknown>} />

@@ -33,6 +33,13 @@ export default function ProjectList({ onSelect }: Props) {
 
   return (
     <div className="space-y-4">
+      <div className="bg-gradient-to-br from-blue-600 to-blue-900 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <FolderOpen size={22} />
+          <h1 className="text-xl font-bold">Project Register</h1>
+        </div>
+        <p className="text-blue-200 text-sm">Create and manage structural projects, link engineers and track design progress</p>
+      </div>
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">

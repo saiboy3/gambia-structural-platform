@@ -5,6 +5,8 @@ import { useBuildingCode } from '../../context/BuildingCodeContext';
 import { getCombinations } from '../../utils/loadCombinations';
 import type { LoadValues, Combination } from '../../utils/loadCombinations';
 import { AlertTriangle, CheckCircle } from 'lucide-react';
+import CalcSheet from '../ui/CalcSheet';
+import { loadCombinationsCalcNotes } from '../../utils/calcNotesLoads';
 
 const TYPE_COLOR: Record<Combination['type'], string> = {
   ULS: 'bg-red-100 text-red-700',
@@ -155,6 +157,12 @@ export default function LoadCombinations() {
           </div>
         </Card>
       </div>
+
+      <CalcSheet
+        title="Load Combinations Calculation Sheet"
+        codeLabel={factors.label}
+        steps={loadCombinationsCalcNotes(loads, combos, { ...factors, code })}
+      />
     </div>
   );
 }

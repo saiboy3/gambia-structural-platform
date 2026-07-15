@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Ruler } from 'lucide-react';
 import Card from '../ui/Card';
 import { convert, getUnits, BAR_DIAMETERS, SINGLE_BAR_AREA, rectangleProps, circleProps } from '../../utils/unitConverter';
 
@@ -35,6 +36,13 @@ export default function UnitConverter() {
 
   return (
     <div className="space-y-4">
+      <div className="bg-gradient-to-br from-emerald-600 to-emerald-900 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <Ruler size={22} />
+          <h1 className="text-xl font-bold">Unit Converter</h1>
+        </div>
+        <p className="text-emerald-200 text-sm">Convert between forces, pressures, bar areas and section properties</p>
+      </div>
       <div className="flex gap-1 bg-slate-100 rounded-xl p-1 w-fit">
         {tabBtn('convert', 'Unit Converter')}
         {tabBtn('bars', 'Bar Area Table')}

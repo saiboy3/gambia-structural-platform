@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Triangle } from 'lucide-react';
+import Button from '../ui/Button';
 import Card from '../ui/Card';
 import InputField, { SelectField } from '../ui/InputField';
 import HelpTooltip from '../ui/HelpTooltip';
@@ -14,6 +16,8 @@ import { useBuildingCode } from '../../context/BuildingCodeContext';
 import OptimiseSuggestion from '../ui/OptimiseSuggestion';
 import type { ConcreteGrade, RebarGrade } from '../../types/structural';
 import type { PileCapInputs, PileArrangement } from '../../utils/pileCapCalculations';
+import CalcSheet from '../ui/CalcSheet';
+import { pileCapCalcNotes } from '../../utils/calcNotesPileMasonry';
 
 const defaultInp: PileCapInputs = {
   arrangement: '4-pile',
@@ -126,6 +130,13 @@ export default function PileCapDesign() {
 
   return (
     <div className="space-y-3">
+      <div className="bg-gradient-to-br from-amber-600 to-amber-900 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <Triangle size={22} />
+          <h1 className="text-xl font-bold">Pile Cap Design</h1>
+        </div>
+        <p className="text-amber-200 text-sm">Bending and punching shear design for 2-, 3- and 4-pile caps</p>
+      </div>
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-xs text-slate-500">Project:</span>
         <ProjectSelector />
@@ -188,10 +199,9 @@ export default function PileCapDesign() {
               onChange={v => setMat(inp.material.concrete, v)}
               options={['B500B','B500C'].map(r => ({ value: r, label: r }))} />
           </div>
-          <button onClick={() => setRes(designPileCap(inp, factors))}
-            className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 rounded-lg">
+          <Button onClick={() => setRes(designPileCap(inp, factors))} fullWidth className="mt-4">
             Design Pile Cap
-          </button>
+          </Button>
         </Card>
 
         {/* Results */}
@@ -215,6 +225,11 @@ export default function PileCapDesign() {
                   <p key={i} className={`text-xs ${m.startsWith('FAIL') ? 'text-red-600' : m.startsWith('WARN') ? 'text-amber-600' : 'text-emerald-600'}`}>{m}</p>
                 ))}
               </div>
+              <CalcSheet
+                title="Pile Cap Calculation Sheet"
+                codeLabel={factors.label}
+                steps={pileCapCalcNotes(inp, res, factors)}
+              />
               <SaveDesignPanel memberType="foundation"
                 inputs={inp as unknown as Record<string, unknown>}
                 results={res as unknown as Record<string, unknown>} />
@@ -255,10 +270,10 @@ export default function PileCapDesign() {
               <>
                 <UtilisationBars checks={checks} title="Capacity checks" />
                 {!suggestion && (
-                  <button onClick={optimise}
-                    className="mt-3 w-full text-xs font-semibold text-blue-600 border border-blue-200 bg-blue-50 hover:bg-blue-100 py-2 rounded-xl transition-colors">
+                  <Button onClick={optimise} variant="secondary" size="sm" fullWidth
+                    className="mt-3 !bg-blue-50 !border-blue-200 !text-blue-600 hover:!bg-blue-100 rounded-xl">
                     Suggest optimal parameters
-                  </button>
+                  </Button>
                 )}
                 {suggestion && (
                   <OptimiseSuggestion

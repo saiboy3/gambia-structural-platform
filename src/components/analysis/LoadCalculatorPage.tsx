@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Calculator } from 'lucide-react';
 import LoadCalculator from './LoadCalculator';
 import LoadCombinations from './LoadCombinations';
 import WindCalculator from './WindCalculator';
@@ -15,6 +16,13 @@ export default function LoadCalculatorPage() {
   const [tab, setTab] = useState<Tab>('loads');
   return (
     <div className="space-y-4">
+      <div className="bg-gradient-to-br from-teal-600 to-teal-900 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <Calculator size={22} />
+          <h1 className="text-xl font-bold">Load Calculator</h1>
+        </div>
+        <p className="text-teal-200 text-sm">Multi-code load combinations by occupancy type, including wind, imposed and dead loads</p>
+      </div>
       {/* Tab bar */}
       <div className="flex gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
         {TABS.map(t => (

@@ -79,10 +79,12 @@ export function designPile(inp: PileInputs): PileResults {
   let depth = 0;
   let Qs = 0;
   let sigma_v = 0;  // effective vertical stress at top of each layer
+  let toeLayer: SoilLayer | undefined;  // soil layer actually at the pile toe
 
   for (const layer of layers) {
     const thick = Math.min(layer.thickness, Math.max(0, length - depth));
     if (thick <= 0) break;
+    toeLayer = layer;
 
     const gamma = layer.gamma ?? (depth < gwt ? 18 : 10);  // kN/m³
     const sigma_mid = sigma_v + gamma * thick / 2;  // effective stress at mid-layer
@@ -110,8 +112,8 @@ export function designPile(inp: PileInputs): PileResults {
     depth += thick;
   }
 
-  // End bearing — use soil type at pile toe
-  const toeLayer = layers.findLast(l => l.soilType) ?? layers[layers.length - 1];
+  // End bearing — use soil type at pile toe (the layer actually reached by the pile length)
+  toeLayer = toeLayer ?? layers[layers.length - 1];
   const sigma_toe = sigma_v;
   let qb = 0;
   if (toeLayer.soilType.includes('clay')) {

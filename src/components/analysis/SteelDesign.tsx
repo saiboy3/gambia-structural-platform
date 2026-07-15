@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Layers } from 'lucide-react';
+import Button from '../ui/Button';
 import Card from '../ui/Card';
 import InputField, { SelectField } from '../ui/InputField';
 import ResultRow from '../ui/ResultRow';
@@ -7,6 +9,9 @@ import SaveDesignPanel from '../ui/SaveDesignPanel';
 import ProjectSelector from '../projects/ProjectSelector';
 import { designSteelMember, STEEL_SECTIONS } from '../../utils/steelCalculations';
 import type { SteelMemberInputs } from '../../utils/steelCalculations';
+import { useBuildingCode } from '../../context/BuildingCodeContext';
+import CalcSheet from '../ui/CalcSheet';
+import { steelCalcNotes } from '../../utils/calcNotesSteel';
 
 const defaultInputs: SteelMemberInputs = {
   sectionName: 'UB 305×165×40',
@@ -39,12 +44,20 @@ function UtilBar({ label, value, color }: { label: string; value: number; color:
 export default function SteelDesign() {
   const [inp, setInp] = useState<SteelMemberInputs>(defaultInputs);
   const [res, setRes] = useState<ReturnType<typeof designSteelMember> | null>(null);
+  const { factors } = useBuildingCode();
 
   const set = (k: keyof SteelMemberInputs, v: string | number) => setInp(p => ({ ...p, [k]: v }));
   const selectedSec = STEEL_SECTIONS.find(s => s.name === inp.sectionName);
 
   return (
     <div className="space-y-3">
+      <div className="bg-gradient-to-br from-slate-600 to-slate-900 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <Layers size={22} />
+          <h1 className="text-xl font-bold">Steel Member Design</h1>
+        </div>
+        <p className="text-slate-200 text-sm">Bending, shear and lateral-torsional buckling checks for UC, UB and SHS sections to EC3/BS5950</p>
+      </div>
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-xs text-slate-500">Project:</span>
         <ProjectSelector />
@@ -69,10 +82,9 @@ export default function SteelDesign() {
             <SelectField label="Steel grade" value={String(inp.fyk)} onChange={v => set('fyk', +v)}
               options={[{ value: '275', label: 'S275 (fyk=275 MPa)' }, { value: '355', label: 'S355 (fyk=355 MPa)' }]} />
           </div>
-          <button onClick={() => setRes(designSteelMember(inp))}
-            className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 rounded-lg">
+          <Button onClick={() => setRes(designSteelMember(inp))} fullWidth className="mt-4">
             Design Member
-          </button>
+          </Button>
         </Card>
 
         <Card title="Design Results" className="lg:col-span-1">
@@ -98,6 +110,11 @@ export default function SteelDesign() {
                   <p key={i} className={`text-xs ${m.startsWith('FAIL') ? 'text-red-600' : m.startsWith('WARN') ? 'text-amber-600' : 'text-emerald-600'}`}>{m}</p>
                 ))}
               </div>
+              <CalcSheet
+                title="Steel Member Calculation Sheet"
+                codeLabel={factors.label}
+                steps={steelCalcNotes(inp, res, factors)}
+              />
               <SaveDesignPanel memberType="steel"
                 inputs={inp as unknown as Record<string, unknown>}
                 results={res as unknown as Record<string, unknown>} />

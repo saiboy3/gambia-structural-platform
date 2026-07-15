@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Hammer } from 'lucide-react';
+import Button from '../ui/Button';
 import Card from '../ui/Card';
 import InputField, { SelectField } from '../ui/InputField';
 import HelpTooltip from '../ui/HelpTooltip';
@@ -11,6 +13,9 @@ import ProjectSelector from '../projects/ProjectSelector';
 import { designPile } from '../../utils/pileCalculations';
 import type { PileInputs, SoilLayer } from '../../utils/pileCalculations';
 import OptimiseSuggestion from '../ui/OptimiseSuggestion';
+import CalcSheet from '../ui/CalcSheet';
+import { pileCalcNotes } from '../../utils/calcNotesPileMasonry';
+import { useBuildingCode } from '../../context/BuildingCodeContext';
 
 const defaultLayers: SoilLayer[] = [
   { thickness: 3, soilType: 'soft-clay', cu: 25, gamma: 17 },
@@ -81,6 +86,7 @@ export default function PileDesign() {
   const [res, setRes] = useState<ReturnType<typeof designPile> | null>(null);
   const [activeTab, setActiveTab] = useState<'profile' | 'utilisation'>('profile');
   const [suggestion, setSuggestion] = useState<{ length: number; diameter: number } | null>(null);
+  const { factors } = useBuildingCode();
 
   const set = (k: keyof PileInputs, v: unknown) => { setInp(p => ({ ...p, [k]: v })); setSuggestion(null); };
 
@@ -150,6 +156,13 @@ export default function PileDesign() {
 
   return (
     <div className="space-y-3">
+      <div className="bg-gradient-to-br from-amber-600 to-amber-900 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <Hammer size={22} />
+          <h1 className="text-xl font-bold">Pile Capacity Design</h1>
+        </div>
+        <p className="text-amber-200 text-sm">End bearing and skin friction capacity for bored and driven piles in Gambian soil conditions</p>
+      </div>
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-xs text-slate-500">Project:</span>
         <ProjectSelector />
@@ -204,7 +217,7 @@ export default function PileDesign() {
           <div className="mt-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-semibold text-slate-600">Soil Profile (top to bottom)</p>
-              <button onClick={addLayer} className="text-xs text-blue-600 hover:underline">+ Add layer</button>
+              <Button onClick={addLayer} variant="ghost" size="sm" className="!p-0 !text-blue-600 hover:!underline hover:!bg-transparent">+ Add layer</Button>
             </div>
             <div className="space-y-2">
               {inp.layers.map((layer, i) => (
@@ -212,7 +225,7 @@ export default function PileDesign() {
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-xs font-medium text-slate-500">Layer {i + 1}</span>
                     {inp.layers.length > 1 && (
-                      <button onClick={() => removeLayer(i)} className="text-xs text-red-500 hover:underline">Remove</button>
+                      <Button onClick={() => removeLayer(i)} variant="ghost" size="sm" className="!p-0 !text-red-500 hover:!underline hover:!bg-transparent">Remove</Button>
                     )}
                   </div>
                   <div className="grid grid-cols-2 gap-1.5">
@@ -237,10 +250,9 @@ export default function PileDesign() {
             </div>
           </div>
 
-          <button onClick={() => setRes(designPile(inp))}
-            className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 rounded-lg">
+          <Button onClick={() => setRes(designPile(inp))} fullWidth className="mt-4">
             Calculate Pile Capacity
-          </button>
+          </Button>
         </Card>
 
         {/* Results */}
@@ -266,6 +278,11 @@ export default function PileDesign() {
                   <p key={i} className={`text-xs ${m.startsWith('FAIL') ? 'text-red-600' : m.startsWith('WARN') ? 'text-amber-600' : 'text-emerald-600'}`}>{m}</p>
                 ))}
               </div>
+              <CalcSheet
+                title="Pile Capacity Calculation Sheet"
+                codeLabel={factors.label}
+                steps={pileCalcNotes(inp, res, factors)}
+              />
               <SaveDesignPanel memberType="foundation"
                 inputs={inp as unknown as Record<string, unknown>}
                 results={res as unknown as Record<string, unknown>} />
@@ -313,10 +330,10 @@ export default function PileDesign() {
               <>
                 <UtilisationBars checks={checks} title="Capacity breakdown" />
                 {!suggestion && (
-                  <button onClick={optimise}
-                    className="mt-3 w-full text-xs font-semibold text-blue-600 border border-blue-200 bg-blue-50 hover:bg-blue-100 py-2 rounded-xl transition-colors">
+                  <Button onClick={optimise} variant="secondary" size="sm" fullWidth
+                    className="mt-3 !bg-blue-50 !border-blue-200 !text-blue-600 hover:!bg-blue-100 rounded-xl">
                     Suggest optimal parameters
-                  </button>
+                  </Button>
                 )}
                 {suggestion && (
                   <OptimiseSuggestion

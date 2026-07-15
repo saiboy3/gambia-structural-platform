@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Plus, AlertTriangle, CheckCircle, Trash2 } from 'lucide-react';
+import { Plus, AlertTriangle, CheckCircle, Trash2, FlaskConical } from 'lucide-react';
 import Card from '../ui/Card';
 import { useProject } from '../../context/ProjectContext';
 import { useUser } from '../../context/UserContext';
 import { getItem, setItem, generateId, KEYS } from '../../utils/storage';
+import Button, { IconButton } from '../ui/Button';
 import type { CubeTestResult } from '../../types/app';
 
 export default function CubeTestLog() {
@@ -53,6 +54,13 @@ export default function CubeTestLog() {
 
   return (
     <div className="space-y-4">
+      <div className="bg-gradient-to-br from-amber-600 to-amber-900 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <FlaskConical size={22} />
+          <h1 className="text-xl font-bold">Concrete Cube Test Log</h1>
+        </div>
+        <p className="text-amber-200 text-sm">Record and track concrete compressive strength results by mix and pour date</p>
+      </div>
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-2 justify-between">
         <div className="flex gap-2">
@@ -62,10 +70,7 @@ export default function CubeTestLog() {
             {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>
-        <button onClick={() => setShowAdd(true)}
-          className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-xl">
-          <Plus size={14} /> Add Test Result
-        </button>
+        <Button onClick={() => setShowAdd(true)} icon={<Plus size={14} />}>Add Test Result</Button>
       </div>
 
       {/* Summary */}
@@ -122,10 +127,8 @@ export default function CubeTestLog() {
             </div>
           </div>
           <div className="flex gap-2 mt-4">
-            <button onClick={handleAdd}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 rounded-lg">Save Result</button>
-            <button onClick={() => setShowAdd(false)}
-              className="px-4 py-2.5 text-sm border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-50">Cancel</button>
+            <Button onClick={handleAdd} fullWidth>Save Result</Button>
+            <Button onClick={() => setShowAdd(false)} variant="secondary">Cancel</Button>
           </div>
         </Card>
       )}
@@ -166,8 +169,7 @@ export default function CubeTestLog() {
                     : <AlertTriangle size={14} className="text-red-600 mx-auto" />}
                 </td>
                 <td className="px-3 py-2">
-                  <button onClick={() => save(tests.filter(x => x.id !== t.id))}
-                    className="text-slate-300 hover:text-red-500"><Trash2 size={12} /></button>
+                  <IconButton onClick={() => save(tests.filter(x => x.id !== t.id))} tone="danger"><Trash2 size={12} /></IconButton>
                 </td>
               </tr>
             ))}

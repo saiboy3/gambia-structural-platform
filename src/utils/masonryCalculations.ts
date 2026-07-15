@@ -77,7 +77,7 @@ export function designMasonryWall(inp: MasonryInputs, cf: CodeFactors): MasonryR
 
   // ── Effective thickness (single leaf — simplified) ─────────────────────────
   const t = thickness / 1000;  // m
-  const tef = wallType === 'cavity' ? 1.0 / ((1 / t ** 3 + 1 / t ** 3)) ** (1 / 3) : t;
+  const tef = wallType === 'cavity' ? (t ** 3 + t ** 3) ** (1 / 3) : t;
 
   const slenderness = hef / tef;
   const slenderness_ok = slenderness <= 27;

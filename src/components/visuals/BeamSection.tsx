@@ -64,7 +64,7 @@ export default function BeamSection({ inputs, results }: Props) {
   return (
     <div className="flex flex-col items-center gap-2">
       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Cross-Section</p>
-      <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="w-full border border-slate-200 rounded-lg bg-white">
+      <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="w-full border border-slate-200 rounded-lg bg-white shadow-sm">
         <defs>
           <pattern id="bsHatch" patternUnits="userSpaceOnUse" width={8} height={8} patternTransform="rotate(45)">
             <line x1={0} y1={0} x2={0} y2={8} stroke="#94a3b8" strokeWidth={0.7} strokeOpacity={0.55} />
@@ -250,7 +250,7 @@ export default function BeamSection({ inputs, results }: Props) {
 
       {/* ── Elevation / loading diagram ── */}
       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mt-1">Elevation & Loading</p>
-      <svg width="100%" viewBox="0 0 460 96" className="w-full border border-slate-200 rounded-lg bg-white">
+      <svg width="100%" viewBox="0 0 460 96" className="w-full border border-slate-200 rounded-lg bg-white shadow-sm">
         <defs>
           <marker id="bsUdl" markerWidth={5} markerHeight={5} refX={2.5} refY={5} orient="auto">
             <path d="M0,0 L2.5,5 L5,0 Z" fill="#3b82f6" />

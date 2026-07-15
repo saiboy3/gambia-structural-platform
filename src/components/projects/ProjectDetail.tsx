@@ -1,4 +1,4 @@
-import { ArrowLeft, Plus, FileText, Layers, Columns3, Square, Hammer, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Plus, FileText, Layers, Columns3, Square, Hammer, AlertTriangle, Receipt, DollarSign } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
 import { useUser } from '../../context/UserContext';
 import StatusBadge from '../workflow/StatusBadge';
@@ -19,7 +19,7 @@ interface Props {
 
 export default function ProjectDetail({ projectId, onBack, onNavigate }: Props) {
   const { projects, getProjectDesigns } = useProject();
-  const { users } = useUser();
+  const { users, currentUser } = useUser();
 
   const project = projects.find(p => p.id === projectId);
   const designs = getProjectDesigns(projectId);
@@ -87,6 +87,34 @@ export default function ProjectDetail({ projectId, onBack, onNavigate }: Props) 
           ))}
         </div>
       </div>
+
+      {/* Finance quick actions (principal only) */}
+      {currentUser?.role === 'principal' && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-4">
+          <p className="text-xs font-semibold text-slate-500 mb-3">Finance</p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => {
+                localStorage.setItem('arch_invoice_prefill', JSON.stringify({
+                  projectRef: project.jobNumber, client: project.client,
+                  description: `Structural engineering services — ${project.name}`,
+                }));
+                onNavigate('invoices');
+              }}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition-colors">
+              <Receipt size={12} /> Create Invoice for this Project
+            </button>
+            <button onClick={() => onNavigate('expenses')}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600 transition-colors">
+              <DollarSign size={12} /> Log Expense
+            </button>
+            <button onClick={() => onNavigate('financial-summary')}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600 transition-colors">
+              <FileText size={12} /> Financial Summary
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Designs list */}
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">

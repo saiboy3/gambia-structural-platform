@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Card from '../ui/Card';
-import { Plus, Trash2, Download, RefreshCw } from 'lucide-react';
+import Button, { IconButton } from '../ui/Button';
+import { Plus, Trash2, Download, RefreshCw, FileText, Grid3x3, ChevronDown } from 'lucide-react';
 import { getItem, KEYS } from '../../utils/storage';
 import type { BOQItem } from '../../types/structural';
 import type { CostItem } from '../../types/app';
@@ -27,11 +28,49 @@ function fmt(n: number) {
   return new Intl.NumberFormat('en-GM', { style: 'currency', currency: 'GMD', maximumFractionDigits: 0 }).format(n);
 }
 
+// ─── Tiling (lite) ────────────────────────────────────────────────────────────
+const TILE_SIZES = [
+  { label: '300 × 300 mm', area: 0.09 },
+  { label: '400 × 400 mm', area: 0.16 },
+  { label: '600 × 600 mm', area: 0.36 },
+  { label: '600 × 1200 mm', area: 0.72 },
+] as const;
+
+interface TilingInputs {
+  area: number;          // m² to be tiled
+  tileSizeIdx: number;   // index into TILE_SIZES
+  wastagePct: number;    // cutting wastage
+  tileRate: number;      // GMD per m² of tiles
+  adhesiveRate: number;  // GMD per 20kg bag
+  groutRate: number;     // GMD per kg
+  labourRate: number;    // GMD per m² laid
+}
+
+function calcTiling(t: TilingInputs) {
+  const grossArea = t.area * (1 + t.wastagePct / 100);
+  const tileArea = TILE_SIZES[t.tileSizeIdx].area;
+  const tileCount = Math.ceil(grossArea / tileArea);
+  // Rules of thumb: one 20kg adhesive bag covers ~4 m²; grout ~0.5 kg/m²
+  const adhesiveBags = Math.ceil(t.area / 4);
+  const groutKg = Math.ceil(t.area * 0.5);
+  const tilesCost = grossArea * t.tileRate;
+  const adhesiveCost = adhesiveBags * t.adhesiveRate;
+  const groutCost = groutKg * t.groutRate;
+  const labourCost = t.area * t.labourRate;
+  return { grossArea, tileCount, adhesiveBags, groutKg, tilesCost, adhesiveCost, groutCost, labourCost,
+    total: tilesCost + adhesiveCost + groutCost + labourCost };
+}
+
 export default function BOQ() {
   const [items, setItems]           = useState<BOQItem[]>(defaultItems);
   const [costItems, setCostItems]   = useState<CostItem[]>([]);
   const [contingencyPct, setContingencyPct] = useState(10);
   const [projectTitle, setProjectTitle]     = useState('Structural Works');
+  const [tilingOpen, setTilingOpen] = useState(false);
+  const [tiling, setTiling] = useState<TilingInputs>({
+    area: 50, tileSizeIdx: 2, wastagePct: 10,
+    tileRate: 900, adhesiveRate: 450, groutRate: 120, labourRate: 250,
+  });
 
   useEffect(() => {
     const stored = getItem<CostItem[]>(KEYS.COST_ITEMS, []);
@@ -70,6 +109,23 @@ export default function BOQ() {
     setItems(prev => [...prev, { description: c.description, unit: c.unit, quantity: 1, rate: c.rateGMD, amount: c.rateGMD }]);
   };
 
+  const tilingRes = calcTiling(tiling);
+
+  const addTilingToBOQ = () => {
+    const size = TILE_SIZES[tiling.tileSizeIdx].label;
+    setItems(prev => [...prev,
+      { description: `Floor tiles ${size} (incl. ${tiling.wastagePct}% wastage)`, unit: 'm²',
+        quantity: +tilingRes.grossArea.toFixed(1), rate: tiling.tileRate, amount: Math.round(tilingRes.tilesCost) },
+      { description: 'Tile adhesive 20kg bags', unit: 'bag',
+        quantity: tilingRes.adhesiveBags, rate: tiling.adhesiveRate, amount: tilingRes.adhesiveCost },
+      { description: 'Tile grout', unit: 'kg',
+        quantity: tilingRes.groutKg, rate: tiling.groutRate, amount: tilingRes.groutCost },
+      { description: 'Tiling labour', unit: 'm²',
+        quantity: tiling.area, rate: tiling.labourRate, amount: tilingRes.labourCost },
+    ]);
+    setTilingOpen(false);
+  };
+
   const total      = items.reduce((s, r) => s + r.amount, 0);
   const contingency = total * contingencyPct / 100;
   const grandTotal  = total + contingency;
@@ -81,18 +137,23 @@ export default function BOQ() {
 
   return (
     <div className="space-y-4">
+      <div className="bg-gradient-to-br from-rose-600 to-rose-900 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <FileText size={22} />
+          <h1 className="text-xl font-bold">Bill of Quantities</h1>
+        </div>
+        <p className="text-rose-200 text-sm">Automated material take-off and BOQ generation in Gambian Dalasi (GMD)</p>
+      </div>
       <Card title={`Bill of Quantities — ${projectTitle}`} actions={
         <div className="flex gap-2">
           {costItems.length > 0 && (
-            <button onClick={syncRates}
-              className="flex items-center gap-1.5 text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700">
-              <RefreshCw size={12} /> Sync Rates
-            </button>
+            <Button onClick={syncRates} variant="success" size="sm" icon={<RefreshCw size={12} />}>
+              Sync Rates
+            </Button>
           )}
-          <button onClick={() => window.print()}
-            className="flex items-center gap-1.5 text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700">
-            <Download size={13} /> Print / Export
-          </button>
+          <Button onClick={() => window.print()} size="sm" icon={<Download size={13} />}>
+            Print / Export
+          </Button>
         </div>
       }>
         {/* Project title */}
@@ -143,9 +204,9 @@ export default function BOQ() {
                     {item.amount.toLocaleString()}
                   </td>
                   <td className="px-2 py-1.5">
-                    <button onClick={() => removeRow(i)} className="text-slate-300 hover:text-red-500">
+                    <IconButton onClick={() => removeRow(i)} tone="danger">
                       <Trash2 size={13} />
-                    </button>
+                    </IconButton>
                   </td>
                 </tr>
               ))}
@@ -153,12 +214,13 @@ export default function BOQ() {
           </table>
         </div>
 
-        <button onClick={addRow} className="mt-3 flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800">
-          <Plus size={13} /> Add Row
-        </button>
+        <Button onClick={addRow} variant="ghost" size="sm" icon={<Plus size={13} />}
+          className="mt-3 !text-blue-600 hover:!bg-blue-50">
+          Add Row
+        </Button>
 
         {/* Totals */}
-        <div className="mt-4 border-t border-slate-200 pt-4 space-y-2 max-w-xs ml-auto text-xs">
+        <div className="print-avoid-break mt-4 border-t border-slate-200 pt-4 space-y-2 max-w-xs ml-auto text-xs">
           <div className="flex justify-between">
             <span className="text-slate-600">Sub-total</span>
             <span className="font-semibold">{fmt(total)}</span>
@@ -178,7 +240,82 @@ export default function BOQ() {
         </div>
       </Card>
 
-      {/* Rate reference from CostDatabase or hardcoded */}
+      {/* Tiling calculator (lite) — collapsible, feeds rows into the BOQ above. Working tool only, never printed. */}
+      <div className="no-print bg-white rounded-2xl border border-slate-200 overflow-hidden">
+        <button onClick={() => setTilingOpen(p => !p)}
+          className="w-full flex items-center gap-2.5 px-4 py-3 hover:bg-slate-50 transition-colors">
+          <Grid3x3 size={15} className="text-blue-600" />
+          <span className="text-sm font-semibold text-slate-700 flex-1 text-left">Tiling Calculator (Lite)</span>
+          <span className="text-xs text-slate-400">quantities & cost → add to BOQ</span>
+          <ChevronDown size={14} className={`text-slate-400 transition-transform ${tilingOpen ? 'rotate-180' : ''}`} />
+        </button>
+        {tilingOpen && (
+          <div className="px-4 pb-4 border-t border-slate-100 pt-3 space-y-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div>
+                <label className="text-xs font-medium text-slate-600">Area to tile (m²)</label>
+                <input type="number" min={0} className="w-full mt-1 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-400"
+                  value={tiling.area} onChange={e => setTiling(p => ({ ...p, area: +e.target.value }))} />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-600">Tile size</label>
+                <select className="w-full mt-1 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-400"
+                  value={tiling.tileSizeIdx} onChange={e => setTiling(p => ({ ...p, tileSizeIdx: +e.target.value }))}>
+                  {TILE_SIZES.map((t, i) => <option key={t.label} value={i}>{t.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-600">Wastage (%)</label>
+                <input type="number" min={0} max={30} className="w-full mt-1 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-400"
+                  value={tiling.wastagePct} onChange={e => setTiling(p => ({ ...p, wastagePct: +e.target.value }))} />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-600">Tiles (GMD/m²)</label>
+                <input type="number" min={0} className="w-full mt-1 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-400"
+                  value={tiling.tileRate} onChange={e => setTiling(p => ({ ...p, tileRate: +e.target.value }))} />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-600">Adhesive (GMD/bag)</label>
+                <input type="number" min={0} className="w-full mt-1 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-400"
+                  value={tiling.adhesiveRate} onChange={e => setTiling(p => ({ ...p, adhesiveRate: +e.target.value }))} />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-600">Grout (GMD/kg)</label>
+                <input type="number" min={0} className="w-full mt-1 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-400"
+                  value={tiling.groutRate} onChange={e => setTiling(p => ({ ...p, groutRate: +e.target.value }))} />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-600">Labour (GMD/m²)</label>
+                <input type="number" min={0} className="w-full mt-1 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-400"
+                  value={tiling.labourRate} onChange={e => setTiling(p => ({ ...p, labourRate: +e.target.value }))} />
+              </div>
+            </div>
+
+            {/* Results */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {[
+                { label: 'Tiles needed', value: `${tilingRes.tileCount} pcs (${tilingRes.grossArea.toFixed(1)} m²)` },
+                { label: 'Adhesive', value: `${tilingRes.adhesiveBags} × 20kg bags` },
+                { label: 'Grout', value: `${tilingRes.groutKg} kg` },
+                { label: 'Total cost', value: fmt(tilingRes.total), bold: true },
+              ].map(r => (
+                <div key={r.label} className="bg-slate-50 rounded-lg px-3 py-2">
+                  <p className="text-xs text-slate-500">{r.label}</p>
+                  <p className={`text-sm text-slate-800 ${r.bold ? 'font-bold text-blue-700' : 'font-semibold'}`}>{r.value}</p>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-slate-400">Coverage assumptions: one 20kg adhesive bag per 4 m²; grout at 0.5 kg/m².</p>
+
+            <Button onClick={addTilingToBOQ} size="sm" icon={<Plus size={13} />}>
+              Add Tiling Items to BOQ
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Rate reference from CostDatabase or hardcoded — reference tool only, never printed */}
+      <div className="no-print">
       <Card title={latestCostItems.length > 0
         ? `Current Rates from Cost Database (${latestQuarter})`
         : 'Indicative Unit Rates (GMD) — Gambia Market'
@@ -215,6 +352,7 @@ export default function BOQ() {
           </>
         )}
       </Card>
+      </div>
     </div>
   );
 }

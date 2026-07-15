@@ -27,6 +27,13 @@ export default function CodeReference() {
 
   return (
     <div className="space-y-4">
+      <div className="bg-gradient-to-br from-indigo-600 to-indigo-900 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <BookOpen size={22} />
+          <h1 className="text-xl font-bold">Code Quick Reference</h1>
+        </div>
+        <p className="text-indigo-200 text-sm">Quick lookup of EC2, BS8110 and ACI clause values, factors and design tables</p>
+      </div>
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">

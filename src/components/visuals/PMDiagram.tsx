@@ -38,7 +38,7 @@ export default function PMDiagram({ inputs, factors }: Props) {
           {insideCurve ? '✓ Inside envelope' : '✗ Outside envelope'}
         </span>
       </div>
-      <svg width={SVG_W} height={SVG_H} viewBox={`0 0 ${SVG_W} ${SVG_H}`} className="w-full">
+      <svg width={SVG_W} height={SVG_H} viewBox={`0 0 ${SVG_W} ${SVG_H}`} className="w-full bg-white border border-slate-200 rounded-lg shadow-sm">
         {/* Grid */}
         {mTicks.map(t => (
           <line key={t.val} x1={t.x} y1={PAD.top} x2={t.x} y2={PAD.top + plotH} stroke="#f1f5f9" strokeWidth={1} />

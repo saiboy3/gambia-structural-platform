@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Button from '../ui/Button';
 import Card from '../ui/Card';
 import InputField, { SelectField } from '../ui/InputField';
 import Badge from '../ui/Badge';
@@ -13,7 +14,7 @@ import {
   type ColumnPosition,
 } from '../../utils/quickDesign';
 import type { ConcreteGrade, RebarGrade } from '../../types/structural';
-import { ChevronRight, ChevronLeft, Zap, Building2, MapPin, FlaskConical, SlidersHorizontal, RotateCcw } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Zap, Building2, MapPin, FlaskConical, SlidersHorizontal, RotateCcw, Wind } from 'lucide-react';
 
 const defaultInputs: QuickDesignInputs = {
   occupancy:   'residential',
@@ -96,6 +97,40 @@ function LoadsSummary({ res }: { res: QuickDesignResults }) {
         <span>Slab: <strong>{L.slabThk} mm</strong></span>
         <span>Beam: <strong>{L.beamWidth}×{L.beamDepth} mm</strong></span>
       </div>
+    </Card>
+  );
+}
+
+// ── Wind summary panel ────────────────────────────────────────────────────────
+function WindSummary({ res }: { res: QuickDesignResults }) {
+  const w = res.wind;
+  return (
+    <Card title={
+      <div className="flex items-center gap-2">
+        <Wind size={14} className="text-slate-500" />
+        <span>Wind Load (EN 1991-1-4 estimate)</span>
+      </div>
+    }>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: 'Peak velocity pressure',   value: w.qp.toFixed(2), unit: 'kN/m²' },
+          { label: 'Base shear (this bay)',    value: Math.abs(w.Fw_total).toFixed(0), unit: 'kN' },
+          { label: 'Per perimeter column',     value: res.windHedPerCol.toFixed(0), unit: 'kN', color: 'text-blue-600' },
+          { label: 'Column/foundation moment', value: res.windMedPerCol.toFixed(1), unit: 'kNm', color: 'text-blue-600' },
+        ].map(it => (
+          <div key={it.label} className="bg-slate-50 rounded-xl p-3">
+            <p className="text-xs text-slate-500 mb-1">{it.label}</p>
+            <p className={`text-lg font-bold ${it.color ?? 'text-slate-700'}`}>
+              {it.value}<span className="text-xs font-normal ml-1">{it.unit}</span>
+            </p>
+          </div>
+        ))}
+      </div>
+      <p className="text-xs text-slate-400 mt-3">
+        Interior columns are treated as wind-sheltered. The estimated base shear is applied to the
+        edge and corner columns and their foundations only, using a simplified braced-frame moment
+        (H × storey height / 2). For a full lateral analysis use the Portal Frame or Wind Load modules.
+      </p>
     </Card>
   );
 }
@@ -236,18 +271,12 @@ function SectionTuner({
       </div>
 
       <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-        <button
-          onClick={onReset}
-          className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-100"
-        >
-          <RotateCcw size={12} /> Reset to auto
-        </button>
-        <button
-          onClick={onRun}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors shadow-sm"
-        >
-          <Zap size={14} /> Recalculate
-        </button>
+        <Button onClick={onReset} variant="ghost" size="sm" icon={<RotateCcw size={12} />}>
+          Reset to auto
+        </Button>
+        <Button onClick={onRun} icon={<Zap size={14} />}>
+          Recalculate
+        </Button>
       </div>
     </Card>
   );
@@ -298,6 +327,7 @@ function ResultsPage({
 
       {/* Loads */}
       <LoadsSummary res={res} />
+      <WindSummary res={res} />
 
       {/* Slab + Beam */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -330,7 +360,7 @@ function ResultsPage({
             <button key={p} onClick={() => setColPos(p)}
               className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-colors
                 ${colPos === p ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}>
-              {COL_LABELS[p]}
+              {COL_LABELS[p]}{p !== 'interior' && <span className="ml-1 text-blue-500">+wind</span>}
             </button>
           ))}
         </div>
@@ -346,6 +376,9 @@ function ResultsPage({
             </div>
             <div className="space-y-0.5">
               <ResultRow label="NEd"        value={res.colNed[colPos].toFixed(0)} unit="kN" highlight />
+              {colPos !== 'interior' && (
+                <ResultRow label="Wind moment (Medx)" value={res.windMedPerCol.toFixed(1)} unit="kNm" />
+              )}
               <ResultRow label="Capacity"   value={col.capacity.toFixed(0)} unit="kN" />
               <ResultRow label="As required" value={col.AsReq.toFixed(0)} unit="mm²" />
               <ResultRow label="Main bars"  value={`${col.mainBars.count}T${col.mainBars.dia}`} />
@@ -375,6 +408,12 @@ function ResultsPage({
               <ResultRow label="Bottom bars"  value={`T${fnd.barsBot.dia}@${fnd.barsBot.spacing} mm`} />
               <ResultRow label="Punching"     value={fnd.punchingOK ? '✓ Pass' : '✗ Fail'} />
               <ResultRow label="Bending"      value={fnd.bendingOK  ? '✓ Pass' : '✗ Fail'} />
+              {colPos !== 'interior' && (
+                <>
+                  <ResultRow label="Wind shear (HEd)" value={res.windHedPerCol.toFixed(0)} unit="kN" />
+                  <ResultRow label="Sliding FoS"       value={fnd.FoS_sliding.toFixed(2)} />
+                </>
+              )}
             </div>
             <div className="mt-2 pt-2 border-t border-slate-100">
               {fnd.messages.map((m, i) => (
@@ -502,10 +541,9 @@ export default function QuickDesign() {
           </div>
 
           <div className="flex justify-end mt-4">
-            <button onClick={() => setStep(1)}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors">
+            <Button onClick={() => setStep(1)}>
               Next <ChevronRight size={16} />
-            </button>
+            </Button>
           </div>
         </Card>
       )}
@@ -551,14 +589,12 @@ export default function QuickDesign() {
           </div>
 
           <div className="flex justify-between mt-4">
-            <button onClick={() => setStep(0)}
-              className="flex items-center gap-2 text-slate-600 hover:text-slate-800 text-sm font-semibold px-4 py-2.5 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
-              <ChevronLeft size={16} /> Back
-            </button>
-            <button onClick={run}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors">
-              <Zap size={15} /> Run Quick Design
-            </button>
+            <Button onClick={() => setStep(0)} variant="secondary" icon={<ChevronLeft size={16} />}>
+              Back
+            </Button>
+            <Button onClick={run} icon={<Zap size={15} />}>
+              Run Quick Design
+            </Button>
           </div>
         </Card>
       )}
@@ -568,10 +604,9 @@ export default function QuickDesign() {
         <>
           <ResultsPage res={res} inp={inp} onSet={set} onRun={run} onReset={resetOverrides} />
           <div className="flex justify-start">
-            <button onClick={() => setStep(0)}
-              className="flex items-center gap-2 text-slate-600 hover:text-slate-800 text-sm font-semibold px-4 py-2.5 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
-              <ChevronLeft size={16} /> Start Over
-            </button>
+            <Button onClick={() => setStep(0)} variant="secondary" icon={<ChevronLeft size={16} />}>
+              Start Over
+            </Button>
           </div>
         </>
       )}

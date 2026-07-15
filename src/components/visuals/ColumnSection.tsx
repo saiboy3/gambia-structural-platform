@@ -46,16 +46,22 @@ export default function ColumnSection({ inputs, results }: Props) {
       { x: ox + bw - coverS - diaS / 2, y: oy + bh - coverS - diaS / 2 },
       { x: ox + coverS + diaS / 2, y: oy + bh - coverS - diaS / 2 },
     ];
-    barPositions.push(...corners);
-    const extras = Math.max(0, n - 4);
-    for (let i = 0; i < extras; i++) {
-      const side = i % 4;
-      const p = Math.floor(i / 4) + 1;
-      const total = Math.ceil(extras / 4) + 1;
-      if (side === 0) barPositions.push({ x: ox + coverS + diaS / 2, y: oy + coverS + (p / total) * (bh - 2 * coverS) });
-      else if (side === 1) barPositions.push({ x: ox + coverS + (p / total) * (bw - 2 * coverS), y: oy + coverS + diaS / 2 });
-      else if (side === 2) barPositions.push({ x: ox + bw - coverS - diaS / 2, y: oy + coverS + (p / total) * (bh - 2 * coverS) });
-      else barPositions.push({ x: ox + coverS + (p / total) * (bw - 2 * coverS), y: oy + bh - coverS - diaS / 2 });
+    if (n >= 4) {
+      barPositions.push(...corners);
+      const extras = n - 4;
+      for (let i = 0; i < extras; i++) {
+        const side = i % 4;
+        const p = Math.floor(i / 4) + 1;
+        const total = Math.ceil(extras / 4) + 1;
+        if (side === 0) barPositions.push({ x: ox + coverS + diaS / 2, y: oy + coverS + (p / total) * (bh - 2 * coverS) });
+        else if (side === 1) barPositions.push({ x: ox + coverS + (p / total) * (bw - 2 * coverS), y: oy + coverS + diaS / 2 });
+        else if (side === 2) barPositions.push({ x: ox + bw - coverS - diaS / 2, y: oy + coverS + (p / total) * (bh - 2 * coverS) });
+        else barPositions.push({ x: ox + coverS + (p / total) * (bw - 2 * coverS), y: oy + bh - coverS - diaS / 2 });
+      }
+    } else {
+      // Fewer than 4 bars (chooseBars() can return as few as 2) — use only
+      // the actual count instead of always drawing all 4 corners.
+      barPositions.push(...corners.slice(0, n));
     }
   }
 
@@ -70,7 +76,7 @@ export default function ColumnSection({ inputs, results }: Props) {
   return (
     <div className="flex flex-col items-center gap-2">
       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Column Cross-Section</p>
-      <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="w-full border border-slate-200 rounded-lg bg-white">
+      <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="w-full border border-slate-200 rounded-lg bg-white shadow-sm">
         <ConcreteHatch id="colHatch" />
         <defs>
           <marker id="eccArrow" markerWidth={6} markerHeight={6} refX={5} refY={3} orient="auto">

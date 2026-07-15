@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Hammer } from 'lucide-react';
+import Button from '../ui/Button';
 import Card from '../ui/Card';
 import InputField, { SelectField } from '../ui/InputField';
 import HelpTooltip from '../ui/HelpTooltip';
@@ -11,6 +13,8 @@ import ProjectSelector from '../projects/ProjectSelector';
 import { designAbutment } from '../../utils/abutmentCalculations';
 import { useBuildingCode } from '../../context/BuildingCodeContext';
 import type { AbutmentInputs } from '../../utils/abutmentCalculations';
+import CalcSheet from '../ui/CalcSheet';
+import { abutmentCalcNotes } from '../../utils/calcNotesTransport';
 
 const defaultInp: AbutmentInputs = {
   stemHeight: 4.0,
@@ -290,6 +294,13 @@ export default function BridgeAbutment() {
 
   return (
     <div className="space-y-3">
+      <div className="bg-gradient-to-br from-rose-600 to-rose-900 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <Hammer size={22} />
+          <h1 className="text-xl font-bold">Bridge Abutment Design</h1>
+        </div>
+        <p className="text-rose-200 text-sm">RC bridge abutment wall and footing design including earth and traffic surcharge</p>
+      </div>
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-xs text-slate-500">Project:</span>
         <ProjectSelector />
@@ -381,10 +392,9 @@ export default function BridgeAbutment() {
               options={[25, 30, 35, 40].map(f => ({ value: String(f), label: `C${f}/${f + 5}` }))} />
           </div>
 
-          <button onClick={() => setRes(designAbutment(inp, factors))}
-            className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 rounded-lg">
+          <Button onClick={() => setRes(designAbutment(inp, factors))} fullWidth className="mt-4">
             Design Abutment
-          </button>
+          </Button>
         </Card>
 
         <Card title="Design Results" className="lg:col-span-1">
@@ -417,6 +427,11 @@ export default function BridgeAbutment() {
                   <p key={i} className={`text-xs ${m.startsWith('FAIL') ? 'text-red-600' : m.startsWith('WARN') ? 'text-amber-600' : 'text-emerald-600'}`}>{m}</p>
                 ))}
               </div>
+              <CalcSheet
+                title="Abutment Calculation Sheet"
+                codeLabel={factors.label}
+                steps={abutmentCalcNotes(inp, res, factors)}
+              />
               <SaveDesignPanel memberType="foundation"
                 inputs={inp as unknown as Record<string, unknown>}
                 results={res as unknown as Record<string, unknown>} />

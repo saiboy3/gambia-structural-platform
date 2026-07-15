@@ -1,10 +1,13 @@
 import { useState } from 'react';
+import Button from '../ui/Button';
 import Card from '../ui/Card';
 import InputField, { SelectField } from '../ui/InputField';
 import ResultRow from '../ui/ResultRow';
 import { calcWind, GAMBIA_WIND, TERRAIN } from '../../utils/windCalculations';
 import type { WindInputs, WindResults, TerrainCategory, WindZone } from '../../utils/windCalculations';
 import { Wind } from 'lucide-react';
+import CalcSheet from '../ui/CalcSheet';
+import { windCalcNotes } from '../../utils/calcNotesLoads';
 
 const defaultInputs: WindInputs = {
   vb0: 37, zone: 'Coastal', terrain: 'II',
@@ -75,10 +78,9 @@ export default function WindCalculator() {
             <InputField label="Struct. factor (csCd)" unit="" value={inp.csCd}
               onChange={v => set('csCd', +v)} min={0.8} max={1.1} step={0.05} />
           </div>
-          <button onClick={() => setRes(calcWind(inp))}
-            className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors">
+          <Button onClick={() => setRes(calcWind(inp))} fullWidth className="mt-4">
             Calculate Wind Load
-          </button>
+          </Button>
         </Card>
 
         {/* Results */}
@@ -188,6 +190,14 @@ export default function WindCalculator() {
           )}
         </Card>
       </div>
+
+      {res && (
+        <CalcSheet
+          title="Wind Load Calculation Sheet"
+          codeLabel="EC1-1-4"
+          steps={windCalcNotes(inp, res)}
+        />
+      )}
     </div>
   );
 }

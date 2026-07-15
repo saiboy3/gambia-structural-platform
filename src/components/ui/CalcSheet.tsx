@@ -46,9 +46,12 @@ export default function CalcSheet({ title = 'Calculation Sheet', steps, codeLabe
   return (
     <div className="mt-4 border border-slate-200 rounded-xl overflow-hidden print:border-0">
       {/* Toggle bar */}
-      <button
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => setOpen(p => !p)}
-        className="w-full flex items-center justify-between px-4 py-2.5 bg-slate-50 hover:bg-slate-100 transition-colors text-left print:hidden"
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(p => !p); } }}
+        className="w-full flex items-center justify-between px-4 py-2.5 bg-slate-50 hover:bg-slate-100 transition-colors text-left print:hidden cursor-pointer"
       >
         <div className="flex items-center gap-2">
           <FileText size={13} className="text-slate-500" />
@@ -70,7 +73,7 @@ export default function CalcSheet({ title = 'Calculation Sheet', steps, codeLabe
             ? <ChevronUp size={14} className="text-slate-400" />
             : <ChevronDown size={14} className="text-slate-400" />}
         </div>
-      </button>
+      </div>
 
       {/* Sheet body */}
       {open && (

@@ -2,7 +2,7 @@ import {
   Layers, Columns3, Square, Hammer, FileText, TrendingUp,
   Calculator, Zap, AlertTriangle, Footprints, BookOpen, Ruler,
   FolderOpen, FlaskConical, ClipboardCheck, ImageIcon,
-  DollarSign, Users, Clock, CheckCircle,
+  DollarSign, Users, Clock, CheckCircle, Receipt, BarChart3,
 } from 'lucide-react';
 import { useProject } from '../context/ProjectContext';
 import { useUser } from '../context/UserContext';
@@ -29,6 +29,9 @@ const modules = [
   { id: 'drawing-register',icon: ImageIcon,     label: 'Drawing Register',       desc: 'Upload & manage project drawings',                color: 'bg-slate-500' },
   { id: 'cost-database',  icon: DollarSign,     label: 'Cost Database',          desc: 'Current GMD unit rates by category',              color: 'bg-lime-600' },
   { id: 'staff-dashboard',icon: Users,          label: 'Staff Dashboard',        desc: 'Firm workload, overdue items & approvals',        color: 'bg-violet-600' },
+  { id: 'invoices',       icon: Receipt,        label: 'Invoice Manager',        desc: 'Create, send and track client invoices in GMD',   color: 'bg-emerald-700' },
+  { id: 'expenses',       icon: DollarSign,     label: 'Expense Log',            desc: 'Log and categorise firm expenditure',             color: 'bg-rose-600' },
+  { id: 'financial-summary', icon: BarChart3,   label: 'Financial Summary',      desc: 'Revenue, profit, ageing and spend breakdown',     color: 'bg-indigo-600' },
 ];
 
 const platformStats = [
@@ -55,8 +58,10 @@ export default function Dashboard({ onNavigate }: Props) {
       {/* Hero */}
       <div className="bg-gradient-to-br from-blue-700 to-blue-900 rounded-2xl p-6 lg:p-8 text-white">
         <div className="flex items-center gap-3 mb-2">
-          <TrendingUp size={26} />
-          <h1 className="text-xl lg:text-2xl font-bold">Gambia Structural Platform</h1>
+          <div className="w-10 h-10 rounded-xl bg-white/15 ring-1 ring-white/20 flex items-center justify-center shrink-0">
+            <TrendingUp size={20} />
+          </div>
+          <h1 className="text-xl lg:text-2xl font-bold tracking-tight">Arch Engineering Platform</h1>
         </div>
         <p className="text-blue-200 text-sm max-w-xl">
           Multi-code structural design and QA management platform for engineering firms in The Gambia.
@@ -64,7 +69,7 @@ export default function Dashboard({ onNavigate }: Props) {
         </p>
         <div className="flex flex-wrap gap-3 mt-5">
           {platformStats.map(s => (
-            <div key={s.label} className="bg-blue-800/50 rounded-lg px-3 py-2">
+            <div key={s.label} className="bg-white/10 ring-1 ring-white/10 rounded-lg px-3 py-2 backdrop-blur-sm">
               <p className="text-xs text-blue-300">{s.label}</p>
               <p className="text-sm font-semibold">{s.value}</p>
             </div>
@@ -82,8 +87,10 @@ export default function Dashboard({ onNavigate }: Props) {
             { label: 'Awaiting approval', value: awaitingApproval, icon: CheckCircle, color: 'text-emerald-600', page: 'staff-dashboard' },
           ].map(s => (
             <button key={s.label} onClick={() => onNavigate(s.page)}
-              className="bg-white border border-slate-200 rounded-xl px-4 py-3 flex items-start gap-3 hover:border-blue-300 hover:shadow-sm transition-all text-left">
-              <s.icon size={18} className={`${s.color} mt-0.5 shrink-0`} />
+              className="bg-white border border-slate-200 rounded-xl px-4 py-3 flex items-start gap-3 hover:border-blue-300 hover:shadow-sm hover:-translate-y-0.5 transition-all text-left">
+              <div className={`w-8 h-8 rounded-lg bg-slate-50 ring-1 ring-slate-100 flex items-center justify-center shrink-0 ${s.color}`}>
+                <s.icon size={15} />
+              </div>
               <div>
                 <p className="text-2xl font-bold text-slate-800">{s.value}</p>
                 <p className="text-xs text-slate-500">{s.label}</p>
@@ -100,7 +107,7 @@ export default function Dashboard({ onNavigate }: Props) {
           <button key={m.id} onClick={() => onNavigate(m.id)}
             className="w-full text-left bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl border border-blue-500 shadow-md p-5 hover:shadow-lg hover:from-blue-700 hover:to-blue-800 transition-all group">
             <div className="flex items-center gap-3">
-              <div className="inline-flex p-2.5 rounded-lg bg-white/20 shrink-0">
+              <div className="inline-flex p-2.5 rounded-lg bg-white/20 ring-1 ring-white/25 shrink-0">
                 <Icon size={20} className="text-white" />
               </div>
               <div>
@@ -121,12 +128,13 @@ export default function Dashboard({ onNavigate }: Props) {
             const Icon = m.icon;
             return (
               <button key={m.id} onClick={() => onNavigate(m.id)}
-                className="text-left bg-white rounded-xl border border-slate-200 shadow-sm p-4 hover:shadow-md hover:border-blue-300 transition-all group">
-                <div className={`inline-flex p-2 rounded-lg ${m.color} mb-2.5`}>
+                className="relative text-left bg-white rounded-xl border border-slate-200 shadow-sm p-4 hover:shadow-md hover:-translate-y-0.5 hover:border-blue-300 transition-all group overflow-hidden">
+                <div className={`inline-flex p-2 rounded-lg ${m.color} mb-2.5 shadow-sm ring-1 ring-black/5`}>
                   <Icon size={16} className="text-white" />
                 </div>
                 <h3 className="font-semibold text-slate-800 text-sm group-hover:text-blue-700 transition-colors">{m.label}</h3>
                 <p className="text-xs text-slate-500 mt-0.5">{m.desc}</p>
+                <div className={`absolute left-0 bottom-0 h-0.5 w-0 group-hover:w-full transition-all duration-300 ${m.color}`} />
               </button>
             );
           })}

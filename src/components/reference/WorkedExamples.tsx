@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, BookOpen } from 'lucide-react';
+import { ChevronDown, ChevronRight, BookOpen, FileText } from 'lucide-react';
 import { WORKED_EXAMPLES } from '../../data/workedExamples';
 import type { WorkedExample } from '../../data/workedExamples';
 
@@ -107,6 +107,13 @@ export default function WorkedExamples() {
 
   return (
     <div className="space-y-4">
+      <div className="bg-gradient-to-br from-cyan-600 to-cyan-900 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <FileText size={22} />
+          <h1 className="text-xl font-bold">Worked Examples</h1>
+        </div>
+        <p className="text-cyan-200 text-sm">Step-by-step design calculation examples to study and adapt for project use</p>
+      </div>
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
         <input

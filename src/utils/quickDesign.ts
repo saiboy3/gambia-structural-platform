@@ -9,6 +9,8 @@ import { designSlab }       from './slabCalculations';
 import { designBeam }       from './beamCalculations';
 import { designColumn }     from './columnCalculations';
 import { designFoundation } from './foundationCalculations';
+import { calcWind }         from './windCalculations';
+import type { WindResults, TerrainCategory, WindZone } from './windCalculations';
 import type { SlabResults, BeamResults, ColumnResults, FoundationResults } from '../types/structural';
 
 // ── Occupancy live loads (EN 1991-1-1 / Gambia practice) ─────────────────────
@@ -83,6 +85,9 @@ export interface QuickDesignResults {
   columns:   Record<ColumnPosition, ColumnResults>;
   colNed:    Record<ColumnPosition, number>;   // kN (ULS) for reference
   foundation: Record<ColumnPosition, FoundationResults>;
+  wind:          WindResults;   // EN 1991-1-4 estimate for this building's height/footprint
+  windHedPerCol: number;        // kN — base shear applied to each perimeter (edge/corner) column
+  windMedPerCol: number;        // kNm — simplified column/foundation moment from wind shear
 }
 
 // ── Main function ─────────────────────────────────────────────────────────────
@@ -169,8 +174,41 @@ export function runQuickDesign(
     corner:   wULS * tribAreas.corner   * storeys * 1.1,
   };
 
+  // ── Wind load (simplified EN 1991-1-4 estimate) ──────────────────────────
+  // Interior columns are treated as wind-sheltered (standard preliminary-design
+  // assumption). The total base shear on a one-bay-wide perimeter strip over
+  // the full building height is split between the two perimeter columns (edge
+  // + corner) that make up that frame line. Column/foundation moment uses a
+  // simplified braced-frame contraflexure-at-mid-storey approximation
+  // (M = H × storyHeight / 2) — for a full second-order lateral analysis use
+  // the individual Portal Frame / Column modules.
+  const loc = LOCATIONS.find(l => l.id === inp.location)!;
+  const TERRAIN_BY_CAT: Record<number, TerrainCategory> = { 0: '0', 1: 'I', 2: 'II', 3: 'III', 4: 'IV' };
+  const ZONE_BY_LOCATION: Record<LocationId, WindZone> = {
+    coastal: 'Coastal', inland_urban: 'Urban', inland_rural: 'Inland',
+  };
+  const buildingHeight = storeys * storyHeight;
+
+  const wind = calcWind({
+    vb0: loc.vb,
+    zone: ZONE_BY_LOCATION[inp.location],
+    terrain: TERRAIN_BY_CAT[loc.terrainCat] ?? 'II',
+    height: buildingHeight,
+    breadth: ly,
+    depth: lx,
+    cdir: 1.0,
+    cseason: 1.0,
+    csCd: 1.0,
+    internalPressure: 'closed',
+    rho: 1.25,
+  });
+
+  const windHedPerCol = Math.abs(wind.Fw_total) / 2;      // kN
+  const windMedPerCol = windHedPerCol * (colHeight / 2);  // kNm
+
   const columns: Record<ColumnPosition, ColumnResults> = {} as any;
   for (const pos of ['interior', 'edge', 'corner'] as ColumnPosition[]) {
+    const windMed = pos === 'interior' ? 0 : windMedPerCol;
     columns[pos] = designColumn({
       shape: 'square',
       b: cw, h: cw,
@@ -178,7 +216,7 @@ export function runQuickDesign(
       height: colHeight,
       Ned: colNed[pos],
       Medy: 0,
-      Medx: 0,
+      Medx: windMed,
       material: mat,
       braced: true,
     }, code);
@@ -187,13 +225,15 @@ export function runQuickDesign(
   // ── 4. Foundation design ──────────────────────────────────────────────────
   const foundation: Record<ColumnPosition, FoundationResults> = {} as any;
   for (const pos of ['interior', 'edge', 'corner'] as ColumnPosition[]) {
+    const windHed = pos === 'interior' ? 0 : windHedPerCol;
+    const windMed = pos === 'interior' ? 0 : windMedPerCol;
     foundation[pos] = designFoundation({
       type: 'pad',
       columnB: cw,
       columnH: cw,
       Ned: colNed[pos],
-      Med: 0,
-      Hed: 0,
+      Med: windMed,
+      Hed: windHed,
       selfWeight: 10,
       soilBearing: inp.soilBearing,
       cover: 50,
@@ -202,5 +242,5 @@ export function runQuickDesign(
     }, code);
   }
 
-  return { loads, slab, beam, columns, colNed, foundation };
+  return { loads, slab, beam, columns, colNed, foundation, wind, windHedPerCol, windMedPerCol };
 }

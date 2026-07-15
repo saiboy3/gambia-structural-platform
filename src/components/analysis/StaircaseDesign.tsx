@@ -1,12 +1,16 @@
 import { useState } from 'react';
+import { Footprints } from 'lucide-react';
+import Button from '../ui/Button';
 import Card from '../ui/Card';
 import InputField, { SelectField } from '../ui/InputField';
 import Badge from '../ui/Badge';
 import ResultRow from '../ui/ResultRow';
 import SaveDesignPanel from '../ui/SaveDesignPanel';
 import ProjectSelector from '../projects/ProjectSelector';
+import CalcSheet from '../ui/CalcSheet';
 import { getMaterial } from '../../utils/materials';
 import { designStaircase } from '../../utils/staircaseCalculations';
+import { staircaseCalcNotes } from '../../utils/calcNotesGeotechSlab';
 import { useBuildingCode } from '../../context/BuildingCodeContext';
 import type { StaircaseInputs } from '../../utils/staircaseCalculations';
 import type { ConcreteGrade, RebarGrade } from '../../types/structural';
@@ -50,6 +54,13 @@ export default function StaircaseDesign() {
 
   return (
     <div className="space-y-3">
+      <div className="bg-gradient-to-br from-pink-600 to-pink-900 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <Footprints size={22} />
+          <h1 className="text-xl font-bold">RC Staircase Design</h1>
+        </div>
+        <p className="text-pink-200 text-sm">Flight geometry, waist depth calculation and longitudinal reinforcement design</p>
+      </div>
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-xs text-slate-500">Project:</span>
         <ProjectSelector />
@@ -73,10 +84,9 @@ export default function StaircaseDesign() {
               onChange={(v) => setMat(inp.material.concrete, v)}
               options={['B500B','B500C'].map(r => ({ value: r, label: r }))} />
           </div>
-          <button onClick={() => setRes(designStaircase(inp, factors))}
-            className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 rounded-lg">
+          <Button onClick={() => setRes(designStaircase(inp, factors))} fullWidth className="mt-4">
             Design Staircase
-          </button>
+          </Button>
         </Card>
 
         <Card title="Design Results" className="lg:col-span-1">
@@ -102,6 +112,11 @@ export default function StaircaseDesign() {
                   <p key={i} className={`text-xs ${m.startsWith('FAIL') ? 'text-red-600' : m.startsWith('WARN') ? 'text-amber-600' : 'text-emerald-600'}`}>{m}</p>
                 ))}
               </div>
+              <CalcSheet
+                title="Staircase Calculation Sheet"
+                codeLabel={factors.label}
+                steps={staircaseCalcNotes(inp, res, factors)}
+              />
               <SaveDesignPanel memberType="staircase"
                 inputs={inp as unknown as Record<string, unknown>}
                 results={res as unknown as Record<string, unknown>} />

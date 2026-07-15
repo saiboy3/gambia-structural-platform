@@ -91,7 +91,7 @@ export function designCulvert(inp: CulvertInputs, cf: CodeFactors): CulvertResul
   const asReq = (M: number) => {
     const K = (M * 1e6) / (fck * 1000 * d * d);
     if (K > Klim) msgs.push(`WARN: K=${K.toFixed(3)} > Klim — increase wall/slab thickness`);
-    const z = Math.min(d * (0.5 + Math.sqrt(0.25 - K / 1.134)), 0.95 * d);
+    const z = Math.min(d * (0.5 + Math.sqrt(Math.max(0, 0.25 - K / 1.134))), 0.95 * d);
     return Math.max((M * 1e6) / (fyd * z), 0.26 * Math.sqrt(fck) / 500 * 1000 * d);
   };
 

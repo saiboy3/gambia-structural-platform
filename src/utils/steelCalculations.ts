@@ -127,7 +127,7 @@ export function designSteelMember(inp: SteelMemberInputs): SteelMemberResults {
   // Deflection — elastic midspan (simply supported UDL + point load)
   const E = 210000;  // MPa
   const Iy_mm4 = sec.Iy * 1e4;
-  const defl_udl = (5 / 384) * (w / L) * (L * 1000) ** 4 / (E * Iy_mm4) * 1e-3; // kN/mm → account for units
+  const defl_udl = (5 / 384) * w * (L * 1000) ** 4 / (E * Iy_mm4); // w [kN/m] ≡ [N/mm] numerically
   const defl_pl  = (P * 1000 * (L * 1000) ** 3) / (48 * E * Iy_mm4);
   const deflection = defl_udl + defl_pl;
   const deflLimit = (L * 1000) / 250;

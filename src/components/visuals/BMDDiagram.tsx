@@ -185,7 +185,7 @@ export default function BMDDiagram({ span, supportType, wEd, Med, Ved }: Props) 
   const R = (wEd * span) / 2;
 
   return (
-    <svg width="100%" viewBox={`0 0 ${W} ${TOTAL_H}`} className="w-full select-none bg-white border border-slate-200 rounded-lg">
+    <svg width="100%" viewBox={`0 0 ${W} ${TOTAL_H}`} className="w-full select-none bg-white border border-slate-200 rounded-lg shadow-sm">
       <Defs />
 
       {/* ── Section headers with background bars ── */}

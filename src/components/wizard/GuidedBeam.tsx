@@ -5,6 +5,7 @@
  */
 import { useState } from 'react';
 import { ChevronRight, ChevronLeft, CheckCircle } from 'lucide-react';
+import Button from '../ui/Button';
 import { getMaterial } from '../../utils/materials';
 import type { BeamInputs, ConcreteGrade, RebarGrade } from '../../types/structural';
 
@@ -329,7 +330,7 @@ export default function GuidedBeam({ initial, onDone, onCancel }: Props) {
         </div>
         <div className="flex items-center justify-between">
           <p className="text-xs font-semibold text-slate-700">Step {step + 1} of {STEPS.length}: {STEPS[step]}</p>
-          <button onClick={onCancel} className="text-xs text-slate-400 hover:text-slate-600">Cancel guided mode</button>
+          <Button onClick={onCancel} variant="ghost" size="sm" className="!px-0 !py-0">Cancel guided mode</Button>
         </div>
       </div>
 
@@ -340,20 +341,17 @@ export default function GuidedBeam({ initial, onDone, onCancel }: Props) {
 
       {/* Navigation */}
       <div className="px-5 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
-        <button onClick={back} disabled={step === 0}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 text-sm text-slate-600 hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed">
-          <ChevronLeft size={14} /> Back
-        </button>
+        <Button onClick={back} disabled={step === 0} variant="secondary" icon={<ChevronLeft size={14} />} className="rounded-xl">
+          Back
+        </Button>
         {step < STEPS.length - 1 ? (
-          <button onClick={next}
-            className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">
+          <Button onClick={next} className="rounded-xl">
             Next <ChevronRight size={14} />
-          </button>
+          </Button>
         ) : (
-          <button onClick={() => onDone(state)}
-            className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold">
-            <CheckCircle size={14} /> Run Design
-          </button>
+          <Button onClick={() => onDone(state)} variant="success" icon={<CheckCircle size={14} />} className="rounded-xl">
+            Run Design
+          </Button>
         )}
       </div>
     </div>

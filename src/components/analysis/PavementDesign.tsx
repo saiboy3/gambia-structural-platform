@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { Milestone } from 'lucide-react';
 import Card from '../ui/Card';
+import Button from '../ui/Button';
 import InputField, { SelectField } from '../ui/InputField';
 import HelpTooltip from '../ui/HelpTooltip';
 import Badge from '../ui/Badge';
@@ -8,6 +10,9 @@ import SaveDesignPanel from '../ui/SaveDesignPanel';
 import ProjectSelector from '../projects/ProjectSelector';
 import { designPavement } from '../../utils/pavementCalculations';
 import type { PavementInputs, RoadClass, PavementType, SubgradeType, TrafficGrowth } from '../../utils/pavementCalculations';
+import CalcSheet from '../ui/CalcSheet';
+import { pavementCalcNotes } from '../../utils/calcNotesTransport';
+import { useBuildingCode } from '../../context/BuildingCodeContext';
 
 const defaultInp: PavementInputs = {
   roadClass: 'secondary',
@@ -73,11 +78,19 @@ function PavementCrossSectionSVG({ layers }: { layers: { name: string; thickness
 export default function PavementDesign() {
   const [inp, setInp] = useState<PavementInputs>(defaultInp);
   const [res, setRes] = useState<ReturnType<typeof designPavement> | null>(null);
+  const { factors } = useBuildingCode();
 
   const set = (k: keyof PavementInputs, v: unknown) => setInp(p => ({ ...p, [k]: v }));
 
   return (
     <div className="space-y-3">
+      <div className="bg-gradient-to-br from-rose-600 to-rose-900 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <Milestone size={22} />
+          <h1 className="text-xl font-bold">Road Pavement Design</h1>
+        </div>
+        <p className="text-rose-200 text-sm">Flexible and rigid pavement design for roads including subbase and surfacing thickness</p>
+      </div>
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-xs text-slate-500">Project:</span>
         <ProjectSelector />
@@ -178,10 +191,9 @@ export default function PavementDesign() {
             </div>
           </div>
 
-          <button onClick={() => setRes(designPavement(inp))}
-            className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 rounded-lg">
+          <Button onClick={() => setRes(designPavement(inp))} fullWidth className="mt-4">
             Design Pavement
-          </button>
+          </Button>
         </Card>
 
         {/* Results */}
@@ -214,6 +226,11 @@ export default function PavementDesign() {
                   <p key={i} className={`text-xs ${m.startsWith('FAIL') ? 'text-red-600' : m.startsWith('WARN') ? 'text-amber-600' : 'text-emerald-600'}`}>{m}</p>
                 ))}
               </div>
+              <CalcSheet
+                title="Pavement Calculation Sheet"
+                codeLabel={factors.label}
+                steps={pavementCalcNotes(inp, res, factors)}
+              />
               <SaveDesignPanel memberType="foundation"
                 inputs={inp as unknown as Record<string, unknown>}
                 results={res as unknown as Record<string, unknown>} />

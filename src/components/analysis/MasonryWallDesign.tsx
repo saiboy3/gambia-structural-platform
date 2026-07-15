@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { Layers } from 'lucide-react';
 import Card from '../ui/Card';
+import Button from '../ui/Button';
 import InputField, { SelectField } from '../ui/InputField';
 import HelpTooltip from '../ui/HelpTooltip';
 import Badge from '../ui/Badge';
@@ -11,6 +13,8 @@ import ProjectSelector from '../projects/ProjectSelector';
 import { designMasonryWall } from '../../utils/masonryCalculations';
 import { useBuildingCode } from '../../context/BuildingCodeContext';
 import type { MasonryInputs, MasonryUnit, MortarClass, WallType } from '../../utils/masonryCalculations';
+import CalcSheet from '../ui/CalcSheet';
+import { masonryCalcNotes } from '../../utils/calcNotesPileMasonry';
 
 const defaultInp: MasonryInputs = {
   unitType: 'sandcrete-block',
@@ -106,6 +110,13 @@ export default function MasonryWallDesign() {
 
   return (
     <div className="space-y-3">
+      <div className="bg-gradient-to-br from-stone-600 to-stone-900 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <Layers size={22} />
+          <h1 className="text-xl font-bold">Masonry Wall Design</h1>
+        </div>
+        <p className="text-stone-200 text-sm">Unreinforced masonry wall design to EC6 including slenderness and vertical load capacity</p>
+      </div>
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-xs text-slate-500">Project:</span>
         <ProjectSelector />
@@ -201,10 +212,9 @@ export default function MasonryWallDesign() {
             </div>
           </div>
 
-          <button onClick={() => setRes(designMasonryWall(inp, factors))}
-            className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 rounded-lg">
+          <Button onClick={() => setRes(designMasonryWall(inp, factors))} fullWidth className="mt-4">
             Design Masonry Wall
-          </button>
+          </Button>
         </Card>
 
         {/* Results */}
@@ -242,6 +252,11 @@ export default function MasonryWallDesign() {
                   <p key={i} className={`text-xs ${m.startsWith('FAIL') ? 'text-red-600' : m.startsWith('WARN') ? 'text-amber-600' : 'text-emerald-600'}`}>{m}</p>
                 ))}
               </div>
+              <CalcSheet
+                title="Masonry Wall Calculation Sheet"
+                codeLabel={factors.label}
+                steps={masonryCalcNotes(inp, res, factors)}
+              />
               <SaveDesignPanel memberType="foundation"
                 inputs={inp as unknown as Record<string, unknown>}
                 results={res as unknown as Record<string, unknown>} />

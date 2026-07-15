@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { Upload, ExternalLink, AlertTriangle, FileText, ArchiveX } from 'lucide-react';
+import { Upload, ExternalLink, AlertTriangle, FileText, ArchiveX, ImageIcon, X } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
 import { useUser } from '../../context/UserContext';
 import { getItem, setItem, generateId, estimateStorageBytes, KEYS } from '../../utils/storage';
+import Button, { IconButton } from '../ui/Button';
 import type { Drawing } from '../../types/app';
 
 const STORAGE_WARN_BYTES = 3 * 1024 * 1024; // 3 MB
@@ -79,6 +80,13 @@ export default function DrawingRegister() {
 
   return (
     <div className="space-y-4">
+      <div className="bg-gradient-to-br from-slate-600 to-slate-900 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <ImageIcon size={22} />
+          <h1 className="text-xl font-bold">Drawing Register</h1>
+        </div>
+        <p className="text-slate-200 text-sm">Upload, version and manage project drawings with issue status tracking</p>
+      </div>
       {/* Storage warning */}
       {storageUsed > STORAGE_WARN_BYTES && (
         <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
@@ -106,10 +114,7 @@ export default function DrawingRegister() {
           <option value="all">All projects</option>
           {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
-        <button onClick={() => setShowAdd(true)}
-          className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-xl">
-          <Upload size={14} /> Upload Drawing
-        </button>
+        <Button onClick={() => setShowAdd(true)} icon={<Upload size={14} />}>Upload Drawing</Button>
       </div>
 
       {/* Upload form */}
@@ -155,12 +160,10 @@ export default function DrawingRegister() {
             </div>
           </div>
           <div className="flex gap-2">
-            <button onClick={handleAdd} disabled={!pendingFile || !form.drawingNumber}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-sm font-semibold py-2 rounded-lg">
+            <Button onClick={handleAdd} disabled={!pendingFile || !form.drawingNumber} fullWidth>
               Upload to Register
-            </button>
-            <button onClick={() => { setShowAdd(false); setPendingFile(null); }}
-              className="px-4 py-2 text-sm border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-50">Cancel</button>
+            </Button>
+            <Button onClick={() => { setShowAdd(false); setPendingFile(null); }} variant="secondary">Cancel</Button>
           </div>
         </div>
       )}
@@ -197,14 +200,17 @@ export default function DrawingRegister() {
                 </td>
                 <td className="px-3 py-2">
                   <div className="flex items-center gap-1.5">
-                    <button onClick={() => window.open(d.fileDataUrl)} title="View"
-                      className="text-slate-400 hover:text-blue-600"><ExternalLink size={12} /></button>
+                    <IconButton onClick={() => window.open(d.fileDataUrl)} title="View" tone="primary">
+                      <ExternalLink size={12} />
+                    </IconButton>
                     {d.status === 'current' && (
-                      <button onClick={() => supersede(d.id, '')} title="Supersede"
-                        className="text-slate-400 hover:text-amber-600"><ArchiveX size={12} /></button>
+                      <IconButton onClick={() => supersede(d.id, '')} title="Supersede" className="hover:!text-amber-600 hover:!bg-amber-50">
+                        <ArchiveX size={12} />
+                      </IconButton>
                     )}
-                    <button onClick={() => remove(d.id)} title="Delete"
-                      className="text-slate-400 hover:text-red-500">✕</button>
+                    <IconButton onClick={() => remove(d.id)} title="Delete" tone="danger">
+                      <X size={12} />
+                    </IconButton>
                   </div>
                 </td>
               </tr>
