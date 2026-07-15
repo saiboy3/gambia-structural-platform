@@ -127,7 +127,7 @@ export default function LoadCombinations() {
               </p>
             </div>
             <div className="p-3 bg-slate-50 rounded-lg text-xs text-slate-600 space-y-1">
-              <p><span className="font-semibold">ULS/SLS ratio:</span> {(ulsMax / slsMax).toFixed(2)}</p>
+              <p><span className="font-semibold">ULS/SLS ratio:</span> {slsMax > 0 ? (ulsMax / slsMax).toFixed(2) : '—'}</p>
               <p><span className="font-semibold">Wind contribution:</span> {loads.Wk > 0 ? ((loads.Wk / ulsMax) * 100).toFixed(0) : 0}% of governing ULS</p>
             </div>
           </div>
