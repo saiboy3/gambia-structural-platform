@@ -472,8 +472,45 @@ function ResultsPage({
   );
 }
 
+// ── Single-element shortcuts ─────────────────────────────────────────────────
+// Replaces the old standalone Design Wizard: if the user only needs one member
+// designed, they can jump straight to that module from here instead.
+const ELEMENT_SHORTCUTS: { page: string; label: string; desc: string; icon: string }[] = [
+  { page: 'beam',           label: 'Beam',           desc: 'Horizontal spanning member',   icon: '━' },
+  { page: 'column',         label: 'Column',         desc: 'Vertical load-carrying member', icon: '▐' },
+  { page: 'slab',           label: 'Slab',           desc: 'Floor or roof plate',           icon: '▬' },
+  { page: 'foundation',     label: 'Foundation',     desc: 'Pad or strip footing',          icon: '▽' },
+  { page: 'staircase',      label: 'Staircase',      desc: 'RC stair flight',               icon: '⬧' },
+  { page: 'retaining-wall', label: 'Retaining wall', desc: 'Holds back soil',               icon: '▋' },
+  { page: 'steel',          label: 'Steel member',   desc: 'Steel beam or column check',    icon: '⟨⟩' },
+  { page: 'loads',          label: 'Load calculator',desc: 'Combos, wind & occupancy loads', icon: 'Σ' },
+];
+
+function ElementShortcuts({ onNavigate }: { onNavigate?: (page: string) => void }) {
+  if (!onNavigate) return null;
+  return (
+    <div className="mt-5 pt-4 border-t border-slate-100">
+      <p className="text-xs font-semibold text-slate-500 mb-2">
+        Only need one element? Jump straight to its design module:
+      </p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {ELEMENT_SHORTCUTS.map(e => (
+          <button key={e.page} onClick={() => onNavigate(e.page)}
+            className="flex items-start gap-2 px-3 py-2.5 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50 text-left transition-all group">
+            <span className="text-base font-mono text-slate-400 w-5 shrink-0 group-hover:text-blue-500">{e.icon}</span>
+            <div>
+              <p className="font-semibold text-slate-700 text-xs group-hover:text-blue-700">{e.label}</p>
+              <p className="text-xs text-slate-400 mt-0.5 leading-tight">{e.desc}</p>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
-export default function QuickDesign() {
+export default function QuickDesign({ onNavigate }: { onNavigate?: (page: string) => void }) {
   const [step, setStep] = useState(0);
   const [inp, setInp]   = useState<QuickDesignInputs>(defaultInputs);
   const [res, setRes]   = useState<QuickDesignResults | null>(null);
@@ -502,9 +539,9 @@ export default function QuickDesign() {
       <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl text-white shadow-md">
         <Zap size={22} className="shrink-0" />
         <div>
-          <p className="font-bold text-sm">Quick Design Wizard</p>
+          <p className="font-bold text-sm">Quick Design</p>
           <p className="text-xs text-blue-200">
-            Enter a few project parameters and instantly get slab, beam, column &amp; foundation sizing
+            Enter a few project parameters and instantly get slab, beam, column &amp; foundation sizing — or jump to a single-element module below
           </p>
         </div>
       </div>
@@ -545,6 +582,8 @@ export default function QuickDesign() {
               Next <ChevronRight size={16} />
             </Button>
           </div>
+
+          <ElementShortcuts onNavigate={onNavigate} />
         </Card>
       )}
 

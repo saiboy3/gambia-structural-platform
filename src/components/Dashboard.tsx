@@ -10,7 +10,7 @@ import { useUser } from '../context/UserContext';
 interface Props { onNavigate: (page: string) => void }
 
 const modules = [
-  { id: 'quick',          icon: Zap,            label: 'Quick Design Wizard',    desc: 'Slab → beam → column → foundation in one go',   color: 'bg-blue-600',    highlight: true },
+  { id: 'quick',          icon: Zap,            label: 'Quick Design',           desc: 'Whole bay in one go, or jump to a single element', color: 'bg-blue-600',    highlight: true },
   { id: 'loads',          icon: Calculator,     label: 'Load Calculator',        desc: 'Multi-code load combos by occupancy',             color: 'bg-teal-500' },
   { id: 'beam',           icon: Layers,         label: 'RC Beam Design',         desc: 'Simply-supported, continuous & cantilever',       color: 'bg-blue-500' },
   { id: 'column',         icon: Columns3,       label: 'RC Column Design',       desc: 'Rectangular, square & circular columns',          color: 'bg-violet-500' },
@@ -168,7 +168,7 @@ export default function Dashboard({ onNavigate }: Props) {
         <h3 className="font-semibold text-slate-700 text-sm mb-3">Getting Started</h3>
         <ol className="space-y-1.5 text-xs text-slate-600 list-decimal list-inside">
           <li>Create a <button onClick={() => onNavigate('projects')} className="text-blue-600 hover:underline">project</button> and set yourself as engineer</li>
-          <li>Use the Quick Design Wizard or individual design modules</li>
+          <li>Use Quick Design for a whole bay, or the individual design modules</li>
           <li>Save designs to your project — they follow the Draft → Submitted → Approved workflow</li>
           <li>Log <button onClick={() => onNavigate('cube-tests')} className="text-blue-600 hover:underline">cube tests</button> and <button onClick={() => onNavigate('checklists')} className="text-blue-600 hover:underline">inspection checklists</button> on site</li>
           <li>Generate a <button onClick={() => onNavigate('boq')} className="text-blue-600 hover:underline">Bill of Quantities</button> in GMD from the cost database</li>

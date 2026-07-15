@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   LayoutDashboard, Layers, Columns3, Square, Hammer, FileText, Menu, X,
-  ChevronRight, Calculator, ChevronDown, Zap, AlertTriangle, Footprints,
+  ChevronRight, ChevronDown, Zap, AlertTriangle, Footprints,
   BookOpen, Ruler, FolderOpen, ClipboardCheck, FlaskConical,
   DollarSign, Users, ImageIcon, LogOut, Milestone, Waves, Lock,
   Triangle, BarChart3, Link2, Building2, Mountain,
@@ -43,7 +43,6 @@ import ExpenseLog from './components/accounting/ExpenseLog';
 import FinancialSummary from './components/accounting/FinancialSummary';
 import DrawingRegister from './components/projects/DrawingRegister';
 import LoginScreen from './components/auth/LoginScreen';
-import DesignWizard from './components/wizard/DesignWizard';
 import { BuildingCodeProvider, useBuildingCode } from './context/BuildingCodeContext';
 import type { BuildingCode } from './context/BuildingCodeContext';
 import { useUser, ROLE_LABELS } from './context/UserContext';
@@ -52,7 +51,7 @@ import { useProject } from './context/ProjectContext';
 
 // ─── Page type ────────────────────────────────────────────────────────────────
 type Page =
-  | 'dashboard' | 'quick' | 'loads' | 'wizard'
+  | 'dashboard' | 'quick' | 'loads'
   | 'beam' | 'column' | 'slab' | 'flat-slab' | 'foundation' | 'retaining-wall' | 'staircase'
   | 'pile' | 'pile-cap' | 'masonry-wall'
   | 'steel' | 'portal-frame' | 'composite-beam' | 'steel-connection'
@@ -65,7 +64,6 @@ type Page =
 
 const pageTitle: Record<Page, string> = {
   dashboard: 'Dashboard', quick: 'Quick Design', loads: 'Load Calculator',
-  wizard: 'Design Wizard',
   beam: 'RC Beam Design', column: 'RC Column Design', slab: 'RC Slab Design',
   'flat-slab': 'Flat Slab Design (EC2 Annex I)',
   foundation: 'Pad Foundation Design', 'retaining-wall': 'Retaining Wall Design',
@@ -119,8 +117,7 @@ const NAV_STRUCTURE: NavGroupDef[] = [
     kind: 'flat', label: 'Overview',
     items: [
       { id: 'dashboard',  label: 'Dashboard',      icon: LayoutDashboard },
-      { id: 'wizard',     label: 'Design Wizard',   icon: Zap },
-      { id: 'quick',      label: 'Quick Design',    icon: Calculator },
+      { id: 'quick',      label: 'Quick Design',    icon: Zap },
       { id: 'loads',      label: 'Load Calculator', icon: BarChart3 },
     ],
   },
@@ -542,8 +539,7 @@ function AppInner() {
           ) : (
             <>
               {page === 'dashboard'          && <Dashboard onNavigate={navigate} />}
-              {page === 'wizard'             && <DesignWizard onNavigate={navigate} />}
-              {page === 'quick'              && <QuickDesign />}
+              {page === 'quick'              && <QuickDesign onNavigate={navigate} />}
               {page === 'loads'              && <LoadCalculatorPage />}
               {page === 'beam'               && <BeamDesign />}
               {page === 'column'             && <ColumnDesign />}
