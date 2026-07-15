@@ -10,10 +10,17 @@ export function designFoundation(inp: FoundationInputs, _code: Partial<CodeFacto
   const qa     = inp.soilBearing; // kN/m²
 
   // Sizing
+  // Practical minimum plan dimension — even with zero/near-zero axial load, a
+  // footing must be at least large enough to accommodate the column plus a
+  // reasonable edge projection (150mm each side). Prevents B/L collapsing to
+  // 0 (and the resulting 0/0 = NaN net soil pressure) when Ned ≈ 0.
+  const minPadDim   = (Math.max(inp.columnB, inp.columnH) + 300) / 1000; // m
+  const minStripDim = (inp.columnB + 300) / 1000; // m
+
   let L = 0, B = 0;
   if (inp.type === 'pad') {
     // Assume square then adjust for eccentricity
-    B = Math.sqrt(Ntotal / qa);
+    B = Math.max(Math.sqrt(Ntotal / qa), minPadDim);
     L = B;
     // Eccentric load — increase size
     if (inp.Med > 0) {
@@ -31,7 +38,7 @@ export function designFoundation(inp: FoundationInputs, _code: Partial<CodeFacto
   } else {
     // Strip: 1m run
     const stripLen = inp.stripLength ?? 1;
-    B = Ntotal / (qa * stripLen);
+    B = Math.max(Ntotal / (qa * stripLen), minStripDim);
     B = Math.ceil(B * 10) / 10;
     L = stripLen;
   }

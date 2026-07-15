@@ -62,6 +62,8 @@ export function designBridgeBeam(inp: BridgeBeamInputs, cf: CodeFactors): Bridge
   const { span, bw, h, cover, fck, fyk } = inp;
   const fyd = fyk / 1.15;
   const d = h - cover - 16 - 10;  // T32 + T10 link assumed
+  if (d < 50) msgs.push(`FAIL: Effective depth d=${d}mm too small — cover (${cover}mm) too close to total depth (${h}mm). Increase depth or reduce cover.`);
+  const dCalc = Math.max(d, 50);  // guard against div-by-zero/negative in reinforcement/shear calc below
 
   // ── Effective flange width (T-beam) ──────────────────────────────────────
   const beff = inp.beamType === 'T-beam'
@@ -96,12 +98,12 @@ export function designBridgeBeam(inp: BridgeBeamInputs, cf: CodeFactors): Bridge
   const Med = wEd * span * span / 8;
 
   // Compression block check
-  const K = (Med * 1e6) / (fck * beff * d * d);
+  const K = (Med * 1e6) / (fck * beff * dCalc * dCalc);
   if (K > 0.167) msgs.push('WARN: K > 0.167 — over-reinforced or compression zone in web; increase depth');
 
-  const z = Math.min(d * (0.5 + Math.sqrt(Math.max(0, 0.25 - K / 1.134))), 0.95 * d);
+  const z = Math.min(dCalc * (0.5 + Math.sqrt(Math.max(0, 0.25 - K / 1.134))), 0.95 * dCalc);
   const As_req = (Med * 1e6) / (fyd * z);
-  const As_min = Math.max(0.26 * Math.sqrt(fck) / fyk * bw * d, 0.0013 * bw * d);
+  const As_min = Math.max(0.26 * Math.sqrt(fck) / fyk * bw * dCalc, 0.0013 * bw * dCalc);
   const As_design = Math.max(As_req, As_min);
 
   // Choose bars (typically large dia for bridges)
@@ -115,15 +117,15 @@ export function designBridgeBeam(inp: BridgeBeamInputs, cf: CodeFactors): Bridge
 
   // ── Shear ────────────────────────────────────────────────────────────────
   const Ved = wEd * span / 2;
-  const ρl = Math.min(As_prov / (bw * d), 0.02);
-  const k = Math.min(1 + Math.sqrt(200 / d), 2.0);
+  const ρl = Math.min(As_prov / (bw * dCalc), 0.02);
+  const k = Math.min(1 + Math.sqrt(200 / dCalc), 2.0);
   const VRdc_mpa = (0.18 / cf.gammaC) * k * (100 * ρl * fck) ** (1 / 3);
-  const VRdc = VRdc_mpa * bw * d / 1000;  // kN
+  const VRdc = VRdc_mpa * bw * dCalc / 1000;  // kN
 
   let linkDia = 12, linkSpacing = 200;
   if (Ved > VRdc) {
     // Provide links: Asw/s = VEd / (fyd × 0.9d × cot(45°))
-    const Asw_s = (Ved * 1000) / (fyd * 0.9 * d);  // mm²/mm
+    const Asw_s = (Ved * 1000) / (fyd * 0.9 * dCalc);  // mm²/mm
     const link_As = 2 * Math.PI * 12 * 12 / 4;  // 2 legs T12
     linkSpacing = Math.min(200, Math.floor((link_As / Asw_s)));
     linkDia = 12;
@@ -135,7 +137,7 @@ export function designBridgeBeam(inp: BridgeBeamInputs, cf: CodeFactors): Bridge
 
   // ── Deflection (SLS) ─────────────────────────────────────────────────────
   const wSLS = (gk + qk) * 1;  // kN/m (characteristic)
-  const delta = (5 * wSLS * (span * 1000) ** 4) / (384 * 33500 * bw * d ** 3 / 12);  // mm (wSLS kN/m ≡ N/mm)
+  const delta = (5 * wSLS * (span * 1000) ** 4) / (384 * 33500 * bw * dCalc ** 3 / 12);  // mm (wSLS kN/m ≡ N/mm)
   const deltaLimit = (span * 1000) / 400;  // L/400 for bridges
   const deflectionOK = delta <= deltaLimit;
 

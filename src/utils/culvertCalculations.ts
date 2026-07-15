@@ -57,6 +57,8 @@ export function designCulvert(inp: CulvertInputs, cf: CodeFactors): CulvertResul
   const externalSpan = span + 2 * wallThick / 1000;
   const externalHeight = height + 2 * wallThick / 1000;
   const d = wallThick - cover - 10;  // T10 assumed
+  if (d < 50) msgs.push(`FAIL: Effective depth d=${d}mm too small — cover (${cover}mm) too close to wall thickness (${wallThick}mm). Increase wall thickness or reduce cover.`);
+  const dCalc = Math.max(d, 50);  // guard against div-by-zero/negative in reinforcement calc below
 
   // ── Loads ─────────────────────────────────────────────────────────────────
   const Ko = 0.5;  // earth pressure coefficient (at rest)
@@ -89,10 +91,10 @@ export function designCulvert(inp: CulvertInputs, cf: CodeFactors): CulvertResul
   const fyd = fyk / 1.15;
   const Klim = 0.167;
   const asReq = (M: number) => {
-    const K = (M * 1e6) / (fck * 1000 * d * d);
+    const K = (M * 1e6) / (fck * 1000 * dCalc * dCalc);
     if (K > Klim) msgs.push(`WARN: K=${K.toFixed(3)} > Klim — increase wall/slab thickness`);
-    const z = Math.min(d * (0.5 + Math.sqrt(Math.max(0, 0.25 - K / 1.134))), 0.95 * d);
-    return Math.max((M * 1e6) / (fyd * z), 0.26 * Math.sqrt(fck) / 500 * 1000 * d);
+    const z = Math.min(dCalc * (0.5 + Math.sqrt(Math.max(0, 0.25 - K / 1.134))), 0.95 * dCalc);
+    return Math.max((M * 1e6) / (fyd * z), 0.26 * Math.sqrt(fck) / 500 * 1000 * dCalc);
   };
 
   const As_top = asReq(Med_topSlab);

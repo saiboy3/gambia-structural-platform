@@ -117,23 +117,27 @@ export function designAbutment(inp: AbutmentInputs, cf: CodeFactors): AbutmentRe
 
   // ── Stem reinforcement (ULS) ───────────────────────────────────────────────
   const d_stem = stemThick - cover - 10;
+  if (d_stem < 50) msgs.push(`FAIL: Stem effective depth d=${d_stem}mm too small — cover (${cover}mm) too close to stem thickness (${stemThick}mm). Increase stem thickness or reduce cover.`);
+  const d_stemCalc = Math.max(d_stem, 50);
   const Med_stem_earth = cf.gammaG * Hea_earth * (stemHeight / 3);
   const Med_stem_surcharge = cf.gammaQ * Hea_surcharge * (stemHeight / 2);
   const Med_stem_brake = cf.gammaQ * inp.bridgeFriction * stemHeight;
   const Med_stem = Med_stem_earth + Med_stem_surcharge + Med_stem_brake;
 
-  const K_stem = (Med_stem * 1e6) / (fck * 1000 * d_stem ** 2);
+  const K_stem = (Med_stem * 1e6) / (fck * 1000 * d_stemCalc ** 2);
   if (K_stem > 0.167) msgs.push('WARN: Stem K > 0.167 — increase stem thickness');
-  const z_stem = Math.min(d_stem * (0.5 + Math.sqrt(Math.max(0, 0.25 - K_stem / 1.134))), 0.95 * d_stem);
-  const As_stem = Math.max((Med_stem * 1e6) / (fyd * z_stem), 0.0013 * 1000 * d_stem);
+  const z_stem = Math.min(d_stemCalc * (0.5 + Math.sqrt(Math.max(0, 0.25 - K_stem / 1.134))), 0.95 * d_stemCalc);
+  const As_stem = Math.max((Med_stem * 1e6) / (fyd * z_stem), 0.0013 * 1000 * d_stemCalc);
   const bars_stem = chooseBarsPerMetre(As_stem);
 
   // ── Heel reinforcement (ULS) ───────────────────────────────────────────────
   const d_heel = baseThick - cover - 10;
+  if (d_heel < 50) msgs.push(`FAIL: Heel effective depth d=${d_heel}mm too small — cover (${cover}mm) too close to base thickness (${baseThick}mm). Increase base thickness or reduce cover.`);
+  const d_heelCalc = Math.max(d_heel, 50);
   // Heel: upward soil pressure - downward weight of backfill
   const q_heel = bearingPressure;  // conservative: use max bearing
   const Med_heel = q_heel * heelLen * heelLen / 2 - W_backfill * heelLen / 2 * cf.gammaG;
-  const As_heel_req = Math.max((Math.abs(Med_heel) * 1e6) / (fyd * 0.9 * d_heel), 0.0013 * 1000 * d_heel);
+  const As_heel_req = Math.max((Math.abs(Med_heel) * 1e6) / (fyd * 0.9 * d_heelCalc), 0.0013 * 1000 * d_heelCalc);
   const bars_heel = chooseBarsPerMetre(As_heel_req);
 
   msgs.push(`Stem: T${bars_stem.dia}@${bars_stem.spacing}mm at rear face, Heel: T${bars_heel.dia}@${bars_heel.spacing}mm top`);

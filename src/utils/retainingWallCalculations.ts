@@ -102,7 +102,11 @@ export function designRetainingWall(inp: RetainingWallInputs, _cf: CodeFactors):
     const heel = B - a - sw / 1000;        // m
 
     // Self-weight of concrete (stem + base)
-    const stemH = H - hb / 1000;
+    // Guard against base thickness exceeding the retained height (degenerate
+    // geometry) — otherwise stemH goes negative, flowing through to negative
+    // moments and negative "required" reinforcement areas.
+    if (hb / 1000 >= H) msgs.push('WARN: Base thickness exceeds retained height — check geometry');
+    const stemH = Math.max(H - hb / 1000, 0.15);
     const W_stem = stemH * sw / 1000 * γc;
     const W_base = B * hb / 1000 * γc;
     W_concrete = W_stem + W_base;

@@ -127,10 +127,15 @@ export function designBeam(inp: BeamInputs, code: Partial<CodeFactors> = {}): Be
   const wmax   = 0.3;   // mm
   const fctm   = 0.30 * fck ** (2 / 3);   // MPa mean tensile strength
   const As_prov = mainBars.As;
-  const Ac_eff  = Math.min(2.5 * (inp.depth - d), (inp.depth - x) / 3, inp.depth / 2) * bw;
+  // Neutral axis depth x can exceed the section (pathological, heavily
+  // over-reinforced cases already flagged FAIL elsewhere) — clamp it to the
+  // effective depth so the crack-width geometry stays physically meaningful
+  // instead of going negative and flipping the pass/fail sign.
+  const xCrack  = Math.min(x, d);
+  const Ac_eff  = Math.max(Math.min(2.5 * (inp.depth - d), (inp.depth - xCrack) / 3, inp.depth / 2) * bw, 1);
   const ρp_eff  = As_prov / Ac_eff;
   // Stress in steel at SLS
-  const z_sls   = d - x / 3;
+  const z_sls   = d - xCrack / 3;
   const σs      = (Mek * 1e6) / (As_prov * z_sls);  // MPa
   const sr_max   = 3.4 * inp.cover + 0.425 * (mainBars.dia / ρp_eff) * (1 / 1); // EC2 7.11
   // Crack width estimate

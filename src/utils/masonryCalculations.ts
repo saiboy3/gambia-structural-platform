@@ -99,8 +99,13 @@ export function designMasonryWall(inp: MasonryInputs, cf: CodeFactors): MasonryR
   // ── Design resistance ──────────────────────────────────────────────────────
   const NRd_kNm = Phi * fkd * thickness;  // kN/m
 
-  const utilisation = NEdpm / NRd_kNm;
-  if (utilisation > 1) msgs.push(`FAIL: NEd/NRd = ${utilisation.toFixed(2)} — wall capacity exceeded`);
+  // Guard against Phi (and hence NRd) collapsing to zero when eccentricity
+  // reaches/exceeds t/2 — mathematically the utilisation is infinite (no
+  // resistance left), but showing literal "Infinity" in the UI is unhelpful.
+  // Cap at a large-but-finite ratio so the FAIL message stays readable.
+  const utilisation = NRd_kNm > 1e-6 ? NEdpm / NRd_kNm : (NEdpm > 0 ? 999 : 0);
+  if (NRd_kNm <= 1e-6) msgs.push('FAIL: Eccentricity ≥ t/2 — wall has effectively zero compressive resistance (Φ = 0)');
+  else if (utilisation > 1) msgs.push(`FAIL: NEd/NRd = ${utilisation.toFixed(2)} — wall capacity exceeded`);
   else msgs.push(`PASS: Compressive utilisation = ${(utilisation * 100).toFixed(0)}%`);
 
   // ── Lateral bending (wind) ─────────────────────────────────────────────────

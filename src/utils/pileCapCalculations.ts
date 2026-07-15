@@ -79,17 +79,23 @@ export function designPileCap(inp: PileCapInputs, cf: CodeFactors): PileCapResul
   msgs.push(`Pile load = ${pileLoad.toFixed(0)} kN per pile`);
 
   // ── Bending moment (truss analogy for 2-pile; cantilever for 4-pile) ───────
+  // If the column is wider than the pile spacing, the pile centreline falls
+  // inside (or at) the column face — there is no cantilever action left, so
+  // clamp the lever arm at zero rather than letting it go negative (which
+  // would flow through as a negative, nonsensical design moment).
   let Med: number;
   if (inp.arrangement === '2-pile') {
     // Moment at face of column: tension tie force T = pileLoad × lever arm
     // T = Ned × s / (2 × z) where z = 0.9d (lever arm in strut-and-tie)
     // Simpler: Med at column face = pileLoad × (s/2 - colB/2) / 1000
-    const x_crit = s / 2 - colB / 2;  // mm — cantilever from column face to pile CL
+    const x_crit = Math.max(s / 2 - colB / 2, 0);  // mm — cantilever from column face to pile CL
     Med = pileLoad * x_crit / 1000;   // kNm (per cap width)
+    if (s / 2 - colB / 2 < 0) msgs.push('WARN: Column wider than pile spacing — check geometry, cantilever moment clamped to zero');
   } else {
     // Critical section at column face; moment per metre
-    const x_crit = s / 2 - colB / 2;
+    const x_crit = Math.max(s / 2 - colB / 2, 0);
     Med = pileLoad * x_crit / 1000;   // kNm per pile pair
+    if (s / 2 - colB / 2 < 0) msgs.push('WARN: Column wider than pile spacing — check geometry, cantilever moment clamped to zero');
   }
 
   // As per metre width
