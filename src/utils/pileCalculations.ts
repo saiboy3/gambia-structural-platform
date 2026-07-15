@@ -68,6 +68,14 @@ export function designPile(inp: PileInputs): PileResults {
   const msgs: string[] = [];
   const { diameter, length, layers, gwt, FoS } = inp;
 
+  if (length <= 0) {
+    msgs.push(`FAIL: Embedded length ${length}m is not a valid pile — enter a length > 0`);
+    return {
+      status: 'fail', Qs: 0, Qb: 0, Qu: 0, Qa: 0,
+      layerFriction: [], perimetre: 0, area_tip: 0, messages: msgs,
+    };
+  }
+
   const d = diameter / 1000;   // m
   const perimeter = Math.PI * d;
   const area_tip = Math.PI * d * d / 4;
@@ -112,6 +120,14 @@ export function designPile(inp: PileInputs): PileResults {
     depth += thick;
   }
 
+  // Flag when the soil profile is shallower than the pile — friction/bearing beyond
+  // the last logged layer is silently omitted otherwise, understating nothing (it's
+  // conservative on Qs) but the toe soil type/depth used for Qb would be wrong.
+  const profileDepth = layers.reduce((s, l) => s + l.thickness, 0);
+  if (profileDepth < length) {
+    msgs.push(`WARN: Soil profile (${profileDepth.toFixed(1)}m) is shallower than pile length (${length}m) — extend the profile so the pile toe bears on known soil`);
+  }
+
   // End bearing — use soil type at pile toe (the layer actually reached by the pile length)
   toeLayer = toeLayer ?? layers[layers.length - 1];
   const sigma_toe = sigma_v;
@@ -135,15 +151,22 @@ export function designPile(inp: PileInputs): PileResults {
     const Qa_tension = Qs / FoS;
     msgs.push(`Tension capacity (shaft only) = ${Qa_tension.toFixed(0)} kN`);
   }
-  msgs.push(`PASS: Qa = ${Qa.toFixed(0)} kN (Qu = ${Qu.toFixed(0)} kN, FoS = ${FoS})`);
-  msgs.push(`Shaft: ${Qs.toFixed(0)} kN (${((Qs / Qu) * 100).toFixed(0)}%)  |  Base: ${Qb.toFixed(0)} kN (${((Qb / Qu) * 100).toFixed(0)}%)`);
+  if (Qu <= 0) {
+    msgs.push(`FAIL: Ultimate capacity Qu = 0 kN — check pile length and soil profile`);
+  } else {
+    msgs.push(`PASS: Qa = ${Qa.toFixed(0)} kN (Qu = ${Qu.toFixed(0)} kN, FoS = ${FoS})`);
+    msgs.push(`Shaft: ${Qs.toFixed(0)} kN (${((Qs / Qu) * 100).toFixed(0)}%)  |  Base: ${Qb.toFixed(0)} kN (${((Qb / Qu) * 100).toFixed(0)}%)`);
+  }
 
-  if (Qb / Qu > 0.5 && inp.pileType === 'bored') {
+  if (Qu > 0 && Qb / Qu > 0.5 && inp.pileType === 'bored') {
     msgs.push('WARN: End bearing > 50% — ensure base is properly cleaned for bored pile');
   }
 
+  const status: PileResults['status'] = msgs.some(m => m.startsWith('FAIL')) ? 'fail' :
+    msgs.some(m => m.startsWith('WARN')) ? 'warn' : 'pass';
+
   return {
-    status: 'pass', Qs: +Qs.toFixed(1), Qb: +Qb.toFixed(1),
+    status, Qs: +Qs.toFixed(1), Qb: +Qb.toFixed(1),
     Qu: +Qu.toFixed(1), Qa: +Qa.toFixed(1),
     layerFriction, perimetre: +perimeter.toFixed(3), area_tip: +area_tip.toFixed(4),
     messages: msgs,

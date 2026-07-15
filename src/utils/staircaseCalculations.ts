@@ -69,22 +69,31 @@ export function designStaircase(inp: StaircaseInputs, cf: CodeFactors): Staircas
   const Med = wULS * effectiveSpan * effectiveSpan / mFac;
 
   // Reinforcement
-  const d = waistDepth - cover - 8;
+  const dRaw = waistDepth - cover - 8;
+  const d = Math.max(dRaw, 30);  // floor effective depth — cover approaching/exceeding waist depth is degenerate
+  if (dRaw < 30) msgs.push(`FAIL: Effective depth ${dRaw}mm too small for cover ${cover}mm on waist ${waistDepth}mm — increase waist depth`);
   const K = (Med * 1e6) / (fck * 1000 * d * d);
   const z = Math.min(d * (0.5 + Math.sqrt(Math.max(0, 0.25 - K / 1.134))), 0.95 * d);
   const As_req = Math.max((Med * 1e6) / (fyd * z), 0.26 * (fck ** 0.5 / fyk(inp)) * 1000 * d, 0.0013 * 1000 * d);
 
-  // Bar selection
+  // Bar selection — pick the strongest dia/spacing combo that satisfies As_req.
+  // If none of the tabulated combos are sufficient, fall back to the strongest
+  // available (largest dia, tightest spacing) and flag it rather than silently
+  // returning the loop's unassigned initial default (which understates As).
   const barDias = [10, 12, 16, 20];
   const barAs: Record<number, number> = { 10: 78.5, 12: 113, 16: 201, 20: 314 };
-  let bestBar = { dia: 12, spacing: 150, As: 0 };
+  const strongestDia = barDias[barDias.length - 1];
+  const strongestSpacing = 100;
+  let bestBar = { dia: strongestDia, spacing: strongestSpacing, As: +((barAs[strongestDia] / strongestSpacing) * 1000).toFixed(0) };
+  let found = false;
   for (const dia of barDias) {
     for (const sp of [100, 125, 150, 175, 200]) {
       const As = (barAs[dia] / sp) * 1000;
-      if (As >= As_req) { bestBar = { dia, spacing: sp, As: +As.toFixed(0) }; break; }
+      if (As >= As_req) { bestBar = { dia, spacing: sp, As: +As.toFixed(0) }; found = true; break; }
     }
-    if (bestBar.As >= As_req) break;
+    if (found) break;
   }
+  if (!found) msgs.push(`FAIL: As required ${As_req.toFixed(0)}mm²/m exceeds max practical reinforcement (T${bestBar.dia}@${bestBar.spacing}mm = ${bestBar.As}mm²/m) — increase waist depth`);
 
   // Deflection span/depth check
   const spanRatio = (effectiveSpan * 1000) / waistDepth;
