@@ -161,7 +161,7 @@ export default function ColumnSection({ inputs, results }: Props) {
             <line x1={cx0} y1={cy0} x2={cx0 + 22} y2={cy0}
               stroke="#dc2626" strokeWidth={1.5} markerEnd="url(#eccArrow)" />
             <text x={cx0 + 28} y={cy0 + 3} fontSize={7} fill="#dc2626" fontWeight="700">
-              e = {((inputs.Medy / inputs.Ned) * 1000).toFixed(0)} mm
+              e = {inputs.Ned > 0 ? ((inputs.Medy / inputs.Ned) * 1000).toFixed(0) : '∞'} mm
             </text>
           </>
         )}
