@@ -76,7 +76,12 @@ export function calcWind(inp: WindInputs): WindResults {
   const vp = Math.sqrt(2 * qp * 1000 / inp.rho);   // peak gust velocity
 
   // External pressure coefficients (EC1 Table 7.1)
-  const hd = inp.height / inp.depth;
+  // Guard the h/d ratio: depth = 0 alone gives Infinity (which lands safely in
+  // the hd >= 1 branch), but height = 0 AND depth = 0 gives 0/0 = NaN, which
+  // would cascade into every pressure and force output. Fall back to the
+  // squat-building case, consistent with a zero-height building.
+  const hdRaw = inp.height / inp.depth;
+  const hd = Number.isNaN(hdRaw) ? 0 : hdRaw;
   // Windward wall cpe,10
   const cpe_wall = hd <= 0.25 ? 0.7 : hd >= 1 ? 0.8 : 0.7 + 0.1 * (hd - 0.25) / 0.75;
   // Leeward wall
