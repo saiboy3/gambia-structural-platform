@@ -4,6 +4,8 @@ import Card from '../ui/Card';
 import InputField, { SelectField } from '../ui/InputField';
 import Badge from '../ui/Badge';
 import ResultRow from '../ui/ResultRow';
+import CalcSheet from '../ui/CalcSheet';
+import { quickDesignCalcNotes } from '../../utils/calcNotesQuickDesign';
 import { useBuildingCode } from '../../context/BuildingCodeContext';
 import {
   runQuickDesign,
@@ -284,10 +286,11 @@ function SectionTuner({
 
 // ── Results page ──────────────────────────────────────────────────────────────
 function ResultsPage({
-  res, inp, onSet, onRun, onReset,
+  res, inp, factors, onSet, onRun, onReset,
 }: {
   res:     QuickDesignResults;
   inp:     QuickDesignInputs;
+  factors: ReturnType<typeof useBuildingCode>['factors'];
   onSet:   <K extends keyof QuickDesignInputs>(k: K, v: QuickDesignInputs[K]) => void;
   onRun:   () => void;
   onReset: () => void;
@@ -468,6 +471,13 @@ function ResultsPage({
           Use individual modules for full second-order analysis.
         </p>
       </Card>
+
+      {/* QA/QC audit trail for the whole load path */}
+      <CalcSheet
+        title="Quick Design Calculation Sheet"
+        codeLabel={factors.label}
+        steps={quickDesignCalcNotes(inp, res, factors)}
+      />
     </div>
   );
 }
@@ -641,7 +651,7 @@ export default function QuickDesign({ onNavigate }: { onNavigate?: (page: string
       {/* ── Step 2: Results ── */}
       {step === 2 && res && (
         <>
-          <ResultsPage res={res} inp={inp} onSet={set} onRun={run} onReset={resetOverrides} />
+          <ResultsPage res={res} inp={inp} factors={factors} onSet={set} onRun={run} onReset={resetOverrides} />
           <div className="flex justify-start">
             <Button onClick={() => setStep(0)} variant="secondary" icon={<ChevronLeft size={16} />}>
               Start Over

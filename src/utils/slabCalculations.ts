@@ -21,7 +21,7 @@ function twoWayCoefficients(ly_lx: number, edge: SlabInputs['edgeCondition']): {
 
 export function designSlab(inp: SlabInputs, code: Partial<CodeFactors> = {}): SlabResults {
   const msgs: string[] = [];
-  const { fck, fyd } = inp.material;
+  const { fck, fyk, fyd } = inp.material;
   const γG = code.gammaG ?? 1.35, γQ = code.gammaQ ?? 1.5;
 
   const h  = inp.thickness;
@@ -46,15 +46,55 @@ export function designSlab(inp: SlabInputs, code: Partial<CodeFactors> = {}): Sl
     Med_y = asy * wd * lx * lx;
   }
 
-  // Steel areas (per metre)
-  const As_x = Math.max((Med_x * 1e6) / (fyd * 0.9 * d), 0.0013 * 1000 * h);
-  const As_y = Math.max((Med_y * 1e6) / (fyd * 0.9 * d), 0.0013 * 1000 * h);
+  // ── Bending design (EC2 6.1) ──────────────────────────────────────────────
+  // Derive the lever arm from K rather than assuming a fixed 0.9d, so that
+  // an under-depth / over-reinforced slab is actually flagged.
+  const Kbal = 0.167;
+  const K = (Med_x * 1e6) / (fck * 1000 * d * d);
+  if (K > Kbal) {
+    msgs.push(`FAIL: K=${K.toFixed(3)} > ${Kbal} — compression zone overstressed; increase slab depth`);
+  }
+  const leverArm = (M: number) => {
+    const k = (M * 1e6) / (fck * 1000 * d * d);
+    return Math.min(d * (0.5 + Math.sqrt(Math.max(0, 0.25 - k / 1.134))), 0.95 * d);
+  };
+  const z = leverArm(Med_x);
+  const z_y = leverArm(Med_y);
+
+  // ── Reinforcement limits (EC2 9.2.1.1 / 9.3.1.1) ──────────────────────────
+  // As,min = max(0.26·fctm/fyk·b·d, 0.0013·b·d) — the fctm term governs for
+  // higher concrete grades and was previously omitted.
+  const fctm  = 0.30 * fck ** (2 / 3);
+  const As_min = Math.max(0.26 * (fctm / fyk) * 1000 * d, 0.0013 * 1000 * d);
+  const As_max = 0.04 * 1000 * h;   // 4% of gross concrete area
+
+  const As_x = Math.max((Med_x * 1e6) / (fyd * z), As_min);
+  const As_y = Math.max((Med_y * 1e6) / (fyd * z_y), As_min);
+
+  if (As_x > As_max) {
+    msgs.push(`FAIL: As,x ${As_x.toFixed(0)} > As,max ${As_max.toFixed(0)} mm²/m (4% limit) — increase slab depth`);
+  }
 
   const barsX = chooseSpacing(As_x);
   const barsY = chooseSpacing(As_y);
 
-  // Deflection: EC2 span/d limit
-  const spanRef = inp.type === 'one-way' ? inp.lx : inp.lx;
+  // ── Shear (EC2 6.2.2) ─────────────────────────────────────────────────────
+  // Slabs rarely need shear links, but the check must still be made.
+  const Lshear = inp.type === 'one-way' ? inp.lx : Math.min(inp.lx, inp.ly);
+  const Ved = inp.edgeCondition === 'cantilever' ? wd * Lshear : wd * Lshear / 2;  // kN/m
+  const ρl  = Math.min(barsX.As / (1000 * d), 0.02);
+  const kSize = Math.min(1 + Math.sqrt(200 / d), 2.0);
+  const vmin  = 0.035 * kSize ** 1.5 * Math.sqrt(fck);
+  const vRdc_mpa = Math.max((0.18 / (code.gammaC ?? 1.5)) * kSize * (100 * ρl * fck) ** (1 / 3), vmin);
+  const VRdc = vRdc_mpa * 1000 * d / 1000;  // kN/m
+  const shearOK = VRdc >= Ved;
+  if (!shearOK) {
+    msgs.push(`FAIL: VEd ${Ved.toFixed(1)} > VRd,c ${VRdc.toFixed(1)} kN/m — increase depth or add shear links`);
+  }
+
+  // ── Deflection: EC2 span/d limit ──────────────────────────────────────────
+  // lx is the short span for two-way slabs, which governs deflection.
+  const spanRef = inp.lx;
   let limit = inp.edgeCondition === 'cantilever' ? 8 : inp.edgeCondition === 'continuous-all' ? 26 : 20;
   limit *= Math.sqrt(fck / 25);
   const actualRatio = (spanRef * 1000) / d;
@@ -66,5 +106,11 @@ export function designSlab(inp: SlabInputs, code: Partial<CodeFactors> = {}): Sl
   const status = msgs.some(m => m.startsWith('FAIL')) ? 'FAIL'
                : msgs.some(m => m.startsWith('WARN')) ? 'WARN' : 'OK';
 
-  return { Med_x, Med_y, As_x, As_y, d, barsX, barsY, deflectionOK, spanRatio: actualRatio, status, messages: msgs };
+  return {
+    Med_x, Med_y, As_x, As_y, As_min, As_max,
+    K: +K.toFixed(3), z: +z.toFixed(1),
+    d, barsX, barsY,
+    Ved: +Ved.toFixed(1), VRdc: +VRdc.toFixed(1), shearOK,
+    deflectionOK, spanRatio: actualRatio, status, messages: msgs,
+  };
 }

@@ -87,8 +87,8 @@ export default function SlabDesign() {
           <div className="space-y-1">
             <div className="flex items-center gap-2 mb-3"><Badge status={res.status} /></div>
             <ResultRow label="Effective depth (d)" value={res.d} unit="mm" highlight />
-            <ResultRow label="Span/depth ratio" value={res.spanRatio} highlight />
-            <ResultRow label="Deflection OK" value={res.deflectionOK ? '✓ Pass' : '✗ Fail'} />
+            <ResultRow label="Moment capacity parameter (K)" value={res.K} />
+            <ResultRow label="Lever arm (z)" value={res.z} unit="mm" />
             <p className="text-xs font-semibold text-slate-500 mt-3 mb-1">Short-span (x)</p>
             <ResultRow label="MEd,x" value={res.Med_x} unit="kNm/m" />
             <ResultRow label="As,x req" value={res.As_x} unit="mm²/m" />
@@ -99,6 +99,15 @@ export default function SlabDesign() {
             <ResultRow label="As,y req" value={res.As_y} unit="mm²/m" />
             <ResultRow label="Bars y" value={`T${res.barsY.dia}@${res.barsY.spacing}`} />
             <ResultRow label="As,y prov" value={res.barsY.As.toFixed(0)} unit="mm²/m" />
+            <p className="text-xs font-semibold text-slate-500 mt-3 mb-1">Reinforcement limits</p>
+            <ResultRow label="Minimum steel area" value={res.As_min.toFixed(0)} unit="mm²/m" />
+            <ResultRow label="Maximum steel area" value={res.As_max.toFixed(0)} unit="mm²/m" />
+            <p className="text-xs font-semibold text-slate-500 mt-3 mb-1">Shear &amp; deflection</p>
+            <ResultRow label="Design shear (VEd)" value={res.Ved} unit="kN/m" />
+            <ResultRow label="Concrete shear resistance" value={res.VRdc} unit="kN/m" />
+            <ResultRow label="Shear check" value={res.shearOK ? '✓ Pass' : '✗ Fail'} />
+            <ResultRow label="Span/depth ratio" value={res.spanRatio} />
+            <ResultRow label="Deflection OK" value={res.deflectionOK ? '✓ Pass' : '✗ Fail'} />
             <div className="mt-3 p-2 bg-slate-50 rounded-lg">
               {res.messages.map((m, i) => (
                 <p key={i} className={`text-xs ${m.startsWith('FAIL') ? 'text-red-600' : m.startsWith('WARN') ? 'text-amber-600' : 'text-emerald-600'}`}>{m}</p>

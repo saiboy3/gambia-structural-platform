@@ -115,9 +115,16 @@ export interface SlabResults {
   Med_y: number;        // kNm/m
   As_x: number;         // mm²/m
   As_y: number;         // mm²/m
+  As_min: number;       // mm²/m — EC2 9.2.1.1
+  As_max: number;       // mm²/m — EC2 9.2.1.1(3), 4% of gross area
+  K: number;            // MEd/(fck·b·d²) for the governing (short-span) moment
+  z: number;            // mm — lever arm used for the short-span steel
   d: number;            // mm
   barsX: { dia: number; spacing: number; As: number };
   barsY: { dia: number; spacing: number; As: number };
+  Ved: number;          // kN/m — design shear at support
+  VRdc: number;         // kN/m — concrete shear resistance (EC2 6.2.2)
+  shearOK: boolean;
   deflectionOK: boolean;
   spanRatio: number;
   status: 'OK' | 'FAIL' | 'WARN';

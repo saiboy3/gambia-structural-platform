@@ -392,11 +392,47 @@ export function slabCalcNotes(
 
     { heading: '4. Steel Design' },
     {
+      label: 'Moment capacity parameter',
+      formula: 'K = MEd,x / (fck · b · d²)',
+      working: `= ${n(Med_x)}×10⁶ / (${fck} × 1000 × ${n0(d)}²)`,
+      result: n(res.K, 3),
+      ref: r(code, 'EC2 §6.1', 'BS8110 §3.4.4.4', 'ACI 318 §22.2', 'ACI 318 §22.2'),
+      status: res.K > 0.167 ? 'fail' : 'ok',
+      note: res.K > 0.167
+        ? '✗ K > 0.167 — compression zone overstressed; increase depth'
+        : '✓ K ≤ 0.167 — singly reinforced, no compression steel needed',
+    },
+    {
+      label: 'Lever arm',
+      formula: 'z = d(0.5 + √(0.25 − K/1.134)) ≤ 0.95d',
+      working: `= ${n0(d)} × (0.5 + √(0.25 − ${n(res.K,3)}/1.134))`,
+      result: `${n(res.z, 1)} mm`,
+      ref: r(code, 'EC2 §6.1', 'BS8110 §3.4.4.4', 'ACI 318 §22.2', 'ACI 318 §22.2'),
+    },
+    {
       label: 'Short-span steel (per metre)',
-      formula: 'As,x = MEd,x / (fyd · 0.9 · d)',
-      working: `= ${n(Med_x)}×10⁶ / (${n(fyd,1)} × 0.9 × ${n0(d)})`,
+      formula: 'As,x = MEd,x / (fyd · z)',
+      working: `= ${n(Med_x)}×10⁶ / (${n(fyd,1)} × ${n(res.z,1)})`,
       result: `${n0(As_x)} mm²/m`,
       ref: r(code, 'EC2 §6.1', 'BS8110 §3.5.4', 'ACI 318 §22.2', 'ACI 318 §22.2'),
+    },
+    {
+      label: 'Minimum steel area',
+      formula: 'As,min = max(0.26·fctm/fyk·b·d, 0.0013·b·d)',
+      working: `fctm = ${n(0.30 * fck ** (2/3), 2)} MPa  →  As,min = ${n0(res.As_min)} mm²/m`,
+      result: `${n0(res.As_min)} mm²/m`,
+      ref: r(code, 'EC2 §9.3.1.1 / §9.2.1.1', 'BS8110 §3.12.5 Table 3.25', 'ACI 318 §7.6.1', 'ACI 318 §7.6.1'),
+      status: As_x <= res.As_min ? 'info' : 'ok',
+      note: As_x <= res.As_min ? 'As,min governs the short-span steel' : undefined,
+    },
+    {
+      label: 'Maximum steel area',
+      formula: 'As,max = 0.04 · Ac',
+      working: `= 0.04 × 1000 × ${inp.thickness}`,
+      result: `${n0(res.As_max)} mm²/m`,
+      ref: r(code, 'EC2 §9.2.1.1(3)', 'BS8110 §3.12.6.1', 'ACI 318 §9.6.1', 'ACI 318 §9.6.1'),
+      status: As_x > res.As_max ? 'fail' : 'ok',
+      note: As_x > res.As_max ? '✗ Steel exceeds 4% — increase slab depth' : '✓ Within 4% limit',
     },
     {
       label: 'Bars provided (short span)',
@@ -409,8 +445,8 @@ export function slabCalcNotes(
     },
     {
       label: 'Long-span steel (per metre)',
-      formula: 'As,y = MEd,y / (fyd · 0.9 · d)',
-      working: `= ${n(Med_y)}×10⁶ / (${n(fyd,1)} × 0.9 × ${n0(d)})`,
+      formula: 'As,y = MEd,y / (fyd · z) ≥ As,min',
+      working: `= ${n(Med_y)}×10⁶ / (${n(fyd,1)} × z)  →  governed by ${As_y <= res.As_min ? 'As,min' : 'bending'}`,
       result: `${n0(As_y)} mm²/m`,
       ref: r(code, 'EC2 §6.1', 'BS8110 §3.5.4', 'ACI 318 §22.2', 'ACI 318 §22.2'),
     },
@@ -424,7 +460,32 @@ export function slabCalcNotes(
       note: `${barsY.As >= As_y ? '✓ Adequate' : '✗ Insufficient'}  (req. ${n0(As_y)} mm²/m)`,
     },
 
-    { heading: '5. Deflection Check (Span/d)' },
+    { heading: '5. Shear Check (EC2 §6.2.2)' },
+    {
+      label: 'Design shear',
+      formula: inp.edgeCondition === 'cantilever' ? 'VEd = wEd · L' : 'VEd = wEd · L / 2',
+      working: `= ${n(wd)} × ${lx}${inp.edgeCondition === 'cantilever' ? '' : ' / 2'}`,
+      result: `${n(res.Ved, 1)} kN/m`,
+      ref: r(code, 'EC2 §6.2', 'BS8110 §3.5.5', 'ACI 318 §22.5', 'ACI 318 §22.5'),
+    },
+    {
+      label: 'Concrete shear resistance',
+      formula: 'VRd,c = [0.18/γC · k · (100·ρl·fck)^⅓] · b · d ≥ vmin·b·d',
+      working: `= ${n(res.VRdc, 1)} kN/m  (no shear reinforcement)`,
+      result: `${n(res.VRdc, 1)} kN/m`,
+      ref: r(code, 'EC2 Eq. 6.2a/6.2b', 'BS8110 §3.5.5 Table 3.8', 'ACI 318 §22.5.5', 'ACI 318 §22.5.5'),
+    },
+    {
+      label: 'Shear check',
+      formula: 'VEd ≤ VRd,c',
+      working: `${n(res.Ved,1)} ${res.shearOK ? '≤' : '>'} ${n(res.VRdc,1)} kN/m`,
+      result: res.shearOK ? 'Pass ✓' : 'Fail ✗',
+      ref: r(code, 'EC2 §6.2.2', 'BS8110 §3.5.5', 'ACI 318 §22.5', 'ACI 318 §22.5'),
+      status: res.shearOK ? 'ok' : 'fail',
+      note: res.shearOK ? '✓ No shear reinforcement required' : '✗ Increase depth or add shear links',
+    },
+
+    { heading: '6. Deflection Check (Span/d)' },
     {
       label: 'Span/d actual',
       formula: 'λact = lx × 1000 / d',
