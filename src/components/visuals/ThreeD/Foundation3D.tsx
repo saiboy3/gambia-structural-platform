@@ -58,27 +58,20 @@ function FoundationMesh({ inputs, results }: Props) {
         <meshStandardMaterial color="#334155" wireframe />
       </mesh>
 
-      {/* Bottom X bars */}
+      {/* Bottom X bars — span the pad width (X), so rotate the cylinder Y→X.
+          Without it the bar renders as a spurious vertical through the pad. */}
       {barsX.map((bz, i) => (
-        <mesh key={`bx${i}`} position={[0, -FH / 2 + cover + diaBot / 2, bz]} castShadow>
+        <mesh key={`bx${i}`} position={[0, -FH / 2 + cover + diaBot / 2, bz]} rotation={[0, 0, Math.PI / 2]} castShadow>
           <cylinderGeometry args={[diaBot / 2, diaBot / 2, FW, 6]} />
           <meshStandardMaterial color="#1e40af" metalness={0.8} roughness={0.2} />
-          <mesh rotation={[0, 0, Math.PI / 2]}>
-            <cylinderGeometry args={[diaBot / 2, diaBot / 2, FW, 6]} />
-            <meshStandardMaterial color="#1e40af" metalness={0.8} roughness={0.2} />
-          </mesh>
         </mesh>
       ))}
 
-      {/* Bottom Y bars */}
+      {/* Bottom Y bars — span the pad length (Z), so rotate the cylinder Y→Z */}
       {barsY.map((bx, i) => (
-        <mesh key={`by${i}`} position={[bx, -FH / 2 + cover + diaBot * 1.5, 0]} rotation={[0, Math.PI / 2, 0]} castShadow>
+        <mesh key={`by${i}`} position={[bx, -FH / 2 + cover + diaBot * 1.5, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
           <cylinderGeometry args={[diaBot / 2, diaBot / 2, FL, 6]} />
           <meshStandardMaterial color="#0369a1" metalness={0.8} roughness={0.2} />
-          <mesh rotation={[0, 0, Math.PI / 2]}>
-            <cylinderGeometry args={[diaBot / 2, diaBot / 2, FL, 6]} />
-            <meshStandardMaterial color="#0369a1" metalness={0.8} roughness={0.2} />
-          </mesh>
         </mesh>
       ))}
 

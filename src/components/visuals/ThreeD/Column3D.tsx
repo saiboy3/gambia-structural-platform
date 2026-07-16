@@ -95,12 +95,15 @@ function ColumnMesh({ inputs, results }: Props) {
               <meshStandardMaterial color="#3b82f6" metalness={0.7} roughness={0.3} />
             </mesh>
           ) : (
-            // 4 straight link segments
+            // 4 straight link segments forming a closed rectangle in the XZ
+            // plane. The box is [W, H, D] → X=W, Y=H, Z=D, and a cylinder's
+            // axis is Y by default, so the legs spanning the width rotate Y→X
+            // ([0,0,π/2]) and those spanning the depth rotate Y→Z ([π/2,0,0]).
             [
-              { pos: [0, 0, -D / 2 + cover] as [number,number,number], rot: [0,0,0] as [number,number,number], len: W - 2 * cover },
-              { pos: [0, 0,  D / 2 - cover] as [number,number,number], rot: [0,0,0] as [number,number,number], len: W - 2 * cover },
-              { pos: [-W / 2 + cover, 0, 0] as [number,number,number], rot: [0,0,Math.PI/2] as [number,number,number], len: D - 2 * cover },
-              { pos: [ W / 2 - cover, 0, 0] as [number,number,number], rot: [0,0,Math.PI/2] as [number,number,number], len: D - 2 * cover },
+              { pos: [0, 0, -D / 2 + cover] as [number,number,number], rot: [0,0,Math.PI/2] as [number,number,number], len: W - 2 * cover },
+              { pos: [0, 0,  D / 2 - cover] as [number,number,number], rot: [0,0,Math.PI/2] as [number,number,number], len: W - 2 * cover },
+              { pos: [-W / 2 + cover, 0, 0] as [number,number,number], rot: [Math.PI/2,0,0] as [number,number,number], len: D - 2 * cover },
+              { pos: [ W / 2 - cover, 0, 0] as [number,number,number], rot: [Math.PI/2,0,0] as [number,number,number], len: D - 2 * cover },
             ].map((seg, j) => (
               <mesh key={j} position={seg.pos} rotation={seg.rot}>
                 <cylinderGeometry args={[linkDia / 2, linkDia / 2, seg.len, 6]} />

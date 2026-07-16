@@ -42,27 +42,21 @@ function SlabMesh({ inputs, results }: Props) {
         <meshStandardMaterial color="#475569" wireframe />
       </mesh>
 
-      {/* Bottom X bars */}
+      {/* Bottom X bars — span the lx direction (X). Cylinders default to a Y
+          axis, so each is rotated Y→X; without it they render as spurious
+          vertical bars stabbing through the slab. */}
       {barsX.map((bz, i) => (
-        <mesh key={`bx${i}`} position={[0, -H / 2 + cover + diaX / 2, bz]} castShadow>
+        <mesh key={`bx${i}`} position={[0, -H / 2 + cover + diaX / 2, bz]} rotation={[0, 0, Math.PI / 2]} castShadow>
           <cylinderGeometry args={[diaX / 2, diaX / 2, LX, 6]} />
           <meshStandardMaterial color="#1e40af" metalness={0.8} roughness={0.2} />
-          <mesh rotation={[0, 0, Math.PI / 2]} position={[0, 0, 0]}>
-            <cylinderGeometry args={[diaX / 2, diaX / 2, LX, 6]} />
-            <meshStandardMaterial color="#1e40af" metalness={0.8} roughness={0.2} />
-          </mesh>
         </mesh>
       ))}
 
-      {/* Top Y bars (distribution) */}
+      {/* Top Y bars (distribution) — span the ly direction (Z), so rotate Y→Z */}
       {barsY.map((bx, i) => (
-        <mesh key={`by${i}`} position={[bx, H / 2 - cover - diaY / 2, 0]} rotation={[0, Math.PI / 2, 0]} castShadow>
+        <mesh key={`by${i}`} position={[bx, H / 2 - cover - diaY / 2, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
           <cylinderGeometry args={[diaY / 2, diaY / 2, LY, 6]} />
           <meshStandardMaterial color="#6366f1" metalness={0.8} roughness={0.2} />
-          <mesh rotation={[0, 0, Math.PI / 2]}>
-            <cylinderGeometry args={[diaY / 2, diaY / 2, LY, 6]} />
-            <meshStandardMaterial color="#6366f1" metalness={0.8} roughness={0.2} />
-          </mesh>
         </mesh>
       ))}
 

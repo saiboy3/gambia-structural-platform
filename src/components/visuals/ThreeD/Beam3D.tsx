@@ -45,33 +45,30 @@ function BeamMesh({ inputs, results }: Props) {
         <meshStandardMaterial color="#475569" wireframe />
       </mesh>
 
-      {/* Main tension bars */}
+      {/* Main tension bars — run along the span (X). A cylinder's axis is Y by
+          default, so each bar is rotated Y→X; without that rotation it renders
+          as a spurious vertical bar through the section. */}
       {bars.map((bz, i) => (
-        <mesh key={`bar${i}`} position={[0, barY, bz]} castShadow>
+        <mesh key={`bar${i}`} position={[0, barY, bz]} rotation={[0, 0, Math.PI / 2]} castShadow>
           <cylinderGeometry args={[mainDia / 2, mainDia / 2, L, 8]} />
           <meshStandardMaterial color="#1e40af" metalness={0.8} roughness={0.2} />
-          <mesh rotation={[0, 0, Math.PI / 2]} position={[0, 0, 0]}>
-            <cylinderGeometry args={[mainDia / 2, mainDia / 2, L, 8]} />
-            <meshStandardMaterial color="#1e40af" metalness={0.8} roughness={0.2} />
-          </mesh>
         </mesh>
       ))}
 
-      {/* 2 compression bars top */}
+      {/* 2 nominal top (hanger) bars — carry the stirrup cage */}
       {[-W / 2 + cover + mainDia / 2 * 0.6, W / 2 - cover - mainDia / 2 * 0.6].map((bz, i) => (
-        <mesh key={`top${i}`} position={[0, H / 2 - cover - mainDia / 2 * 0.6, bz]} castShadow>
+        <mesh key={`top${i}`} position={[0, H / 2 - cover - mainDia / 2 * 0.6, bz]} rotation={[0, 0, Math.PI / 2]} castShadow>
           <cylinderGeometry args={[mainDia * 0.4, mainDia * 0.4, L, 8]} />
           <meshStandardMaterial color="#6366f1" metalness={0.8} roughness={0.2} />
-          <mesh rotation={[0, 0, Math.PI / 2]}>
-            <cylinderGeometry args={[mainDia * 0.4, mainDia * 0.4, L, 8]} />
-            <meshStandardMaterial color="#6366f1" metalness={0.8} roughness={0.2} />
-          </mesh>
         </mesh>
       ))}
 
-      {/* Stirrups */}
+      {/* Stirrups — closed loops in the YZ plane (the section), repeated along
+          the span. The group must NOT be rotated: the leg positions/rotations
+          below are already expressed in the beam's own axes, so rotating the
+          group tipped every loop flat along the span. */}
       {stirPositions.map((sx, i) => (
-        <group key={`stir${i}`} position={[sx, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <group key={`stir${i}`} position={[sx, 0, 0]}>
           {/* 4 sides of stirrup */}
           {[
             { pos: [0, H / 2 - cover, 0] as [number,number,number], rot: [Math.PI/2,0,0] as [number,number,number], len: W - 2*cover },
