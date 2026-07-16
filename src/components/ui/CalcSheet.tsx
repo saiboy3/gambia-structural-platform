@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { FileText, ChevronDown, ChevronUp, Printer } from 'lucide-react';
+import { lookupSymbol } from '../../utils/termGlossary';
 
 // ── Data types ────────────────────────────────────────────────────────────────
 export interface CalcStep {
@@ -119,9 +120,17 @@ export default function CalcSheet({ title = 'Calculation Sheet', steps, codeLabe
 
                 return (
                   <tr key={i} className={`border-t border-slate-100 ${rowBg}`}>
-                    {/* Parameter name */}
+                    {/* Parameter name — symbols carry a plain-English tooltip */}
                     <td className="px-3 py-2 font-medium text-slate-700 align-top leading-relaxed">
-                      {step.label}
+                      {(() => {
+                        const explain = step.label ? lookupSymbol(step.label) : undefined;
+                        return explain ? (
+                          <span title={explain}
+                            className="decoration-dotted decoration-slate-300 underline underline-offset-2 cursor-help">
+                            {step.label}
+                          </span>
+                        ) : step.label;
+                      })()}
                     </td>
 
                     {/* Formula + working */}
