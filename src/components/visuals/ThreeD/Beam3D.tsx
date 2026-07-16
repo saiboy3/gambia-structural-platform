@@ -23,6 +23,13 @@ function BeamMesh({ inputs, results }: Props) {
   const n = results.mainBars.count;
   const stirSpacing = results.stirrups.spacing / 100;
 
+  // T-beam: a wider flange sits on top of the web, so the concrete is drawn as
+  // two boxes rather than one. The bars and stirrups stay within the web.
+  const isT = !!inputs.flange;
+  const BF  = (inputs.flange?.width ?? inputs.width) / 100;   // flange width
+  const HF  = (inputs.flange?.thickness ?? 0) / 100;          // flange thickness
+  const webH = H - HF;                                        // web depth below flange
+
   // Main bar positions (bottom)
   const barSpacing = (W - 2 * cover) / Math.max(n - 1, 1);
   const barY = -H / 2 + cover + mainDia / 2;
@@ -34,16 +41,40 @@ function BeamMesh({ inputs, results }: Props) {
 
   return (
     <group ref={groupRef}>
-      {/* Concrete beam — semi-transparent */}
-      <mesh castShadow receiveShadow>
-        <boxGeometry args={[L, H, W]} />
-        <meshStandardMaterial color="#94a3b8" transparent opacity={0.35} side={THREE.DoubleSide} />
-      </mesh>
-      {/* Beam outline wireframe */}
-      <mesh>
-        <boxGeometry args={[L, H, W]} />
-        <meshStandardMaterial color="#475569" wireframe />
-      </mesh>
+      {/* Concrete — one box for a rectangular beam, web + flange for a T */}
+      {isT ? (
+        <>
+          {/* Web */}
+          <mesh castShadow receiveShadow position={[0, -HF / 2, 0]}>
+            <boxGeometry args={[L, webH, W]} />
+            <meshStandardMaterial color="#94a3b8" transparent opacity={0.35} side={THREE.DoubleSide} />
+          </mesh>
+          <mesh position={[0, -HF / 2, 0]}>
+            <boxGeometry args={[L, webH, W]} />
+            <meshStandardMaterial color="#475569" wireframe />
+          </mesh>
+          {/* Flange */}
+          <mesh castShadow receiveShadow position={[0, H / 2 - HF / 2, 0]}>
+            <boxGeometry args={[L, HF, BF]} />
+            <meshStandardMaterial color="#94a3b8" transparent opacity={0.35} side={THREE.DoubleSide} />
+          </mesh>
+          <mesh position={[0, H / 2 - HF / 2, 0]}>
+            <boxGeometry args={[L, HF, BF]} />
+            <meshStandardMaterial color="#475569" wireframe />
+          </mesh>
+        </>
+      ) : (
+        <>
+          <mesh castShadow receiveShadow>
+            <boxGeometry args={[L, H, W]} />
+            <meshStandardMaterial color="#94a3b8" transparent opacity={0.35} side={THREE.DoubleSide} />
+          </mesh>
+          <mesh>
+            <boxGeometry args={[L, H, W]} />
+            <meshStandardMaterial color="#475569" wireframe />
+          </mesh>
+        </>
+      )}
 
       {/* Main tension bars — run along the span (X). A cylinder's axis is Y by
           default, so each bar is rotated Y→X; without that rotation it renders
@@ -86,7 +117,9 @@ function BeamMesh({ inputs, results }: Props) {
 
       {/* Labels */}
       <Text position={[0, H / 2 + 0.4, 0]} fontSize={0.25} color="#1e293b" anchorX="center">
-        {inputs.width}×{inputs.depth}mm — {inputs.span}m span
+        {isT
+          ? `T-beam bw=${inputs.width} h=${inputs.depth} bf=${inputs.flange!.width} hf=${inputs.flange!.thickness}mm — ${inputs.span}m span`
+          : `${inputs.width}×${inputs.depth}mm — ${inputs.span}m span`}
       </Text>
       <Text position={[0, barY - 0.3, 0]} fontSize={0.18} color="#1e40af" anchorX="center">
         {results.mainBars.count}T{results.mainBars.dia} bottom

@@ -18,11 +18,21 @@ export default function BeamSection({ inputs, results }: Props) {
   const LEFT = 36, TOP = 32, BOT_PAD = 42;
   const availW = 160;    // max section pixel-width
   const availH = H - TOP - BOT_PAD;
-  const scale = Math.min(availW / inputs.width, availH / inputs.depth);
-  const bw = inputs.width * scale;
-  const bh = inputs.depth * scale;
-  const ox = LEFT;
+
+  // T-beam: the flange is wider than the web, so it governs the scale and the
+  // outline becomes a T rather than a rectangle.
+  const isT     = !!inputs.flange;
+  const bfMm    = isT ? inputs.flange!.width : inputs.width;
+  const hfMm    = isT ? inputs.flange!.thickness : 0;
+
+  const scale = Math.min(availW / bfMm, availH / inputs.depth);
+  const bw = inputs.width * scale;   // web width (px)
+  const bf = bfMm * scale;           // flange width (px) — equals bw when rectangular
+  const hf = hfMm * scale;           // flange thickness (px)
+  const bh = inputs.depth * scale;   // overall depth (px)
+  const ox = LEFT;                   // left edge of the widest part (flange)
   const oy = TOP + (availH - bh) / 2;  // centre vertically
+  const webX = ox + (bf - bw) / 2;     // web is centred under the flange
 
   const coverS = inputs.cover * scale;
   const barDia  = results.mainBars.dia;
@@ -34,15 +44,29 @@ export default function BeamSection({ inputs, results }: Props) {
   const x_mm = results.x;
   const x_s  = Math.min(x_mm * scale, bh * 0.45);   // clamp display height
 
+  // Tension bars sit in the web, so they span the web width (not the flange).
   const n         = results.mainBars.count;
   const barY      = oy + bh - coverS - diaS / 2;
   const barSpacing = n > 1 ? (bw - 2 * coverS) / (n - 1) : 0;
-  const bars      = Array.from({ length: n }, (_, i) => ox + coverS + i * barSpacing);
+  const bars      = Array.from({ length: n }, (_, i) => webX + coverS + i * barSpacing);
 
-  const stirX = ox + coverS - stirDia / 2;
+  const stirX = webX + coverS - stirDia / 2;
   const stirY = oy + coverS - stirDia / 2;
   const stirW = bw - 2 * coverS + stirDia;
   const stirH = bh - 2 * coverS + stirDia;
+
+  // T outline: across the flange, down its ends, in to the web, down the web.
+  const tPath = [
+    `M ${ox} ${oy}`,
+    `H ${ox + bf}`,
+    `V ${oy + hf}`,
+    `H ${webX + bw}`,
+    `V ${oy + bh}`,
+    `H ${webX}`,
+    `V ${oy + hf}`,
+    `H ${ox}`,
+    'Z',
+  ].join(' ');
 
   // ── Side-panel layout (all guaranteed right of section) ───────────────────
   // d-dim line:   x = ox+bw+10  (10px gap from section right edge)
@@ -50,16 +74,16 @@ export default function BeamSection({ inputs, results }: Props) {
   // stress panel: x = ox+bw+70  (strain width=36, 8px gap)
   // legend:       x = ox+bw+118 (stress width=36, 8px gap)
 
-  const DIM_D_X   = ox + bw + 10;
-  const STRAIN_X  = ox + bw + 26;
+  // Keyed off the flange width (bf), which is the widest part — using the web
+  // width would let the panels overlap the flange on a T-beam.
+  const DIM_D_X   = ox + bf + 10;
+  const STRAIN_X  = ox + bf + 26;
   const STRAIN_W  = 36;
   const STRESS_X  = STRAIN_X + STRAIN_W + 8;
   const STRESS_W  = 36;
   const LEGEND_X  = STRESS_X + STRESS_W + 8;
   const LEGEND_W  = W - LEGEND_X - 4;
 
-  // ── Neutral axis line (stops before side panels) ──────────────────────────
-  const NA_LINE_X2 = ox + bw + 5;   // stops 5px past section edge only
 
   return (
     <div className="flex flex-col items-center gap-2">
@@ -77,21 +101,34 @@ export default function BeamSection({ inputs, results }: Props) {
           </marker>
         </defs>
 
-        {/* ── Concrete section (hatch + tint) ── */}
-        <rect x={ox} y={oy} width={bw} height={bh} fill="url(#bsHatch)" stroke="#334155" strokeWidth={2} />
-        <rect x={ox} y={oy} width={bw} height={bh} fill="#cbd5e1" fillOpacity={0.3} stroke="none" />
+        {/* ── Concrete section (hatch + tint) — T outline when flanged ── */}
+        <path d={tPath} fill="url(#bsHatch)" stroke="#334155" strokeWidth={2} />
+        <path d={tPath} fill="#cbd5e1" fillOpacity={0.3} stroke="none" />
 
-        {/* ── Whitney stress block ── */}
-        <rect x={ox} y={oy} width={bw} height={x_s}
-          fill="#3b82f6" fillOpacity={0.22} stroke="#3b82f6" strokeWidth={1} strokeDasharray="4,2" />
+        {/* ── Whitney stress block ──
+            For a T-beam the block is flange-wide while it sits within the
+            flange, and narrows to the web below it. */}
+        {isT ? (
+          <>
+            <rect x={ox} y={oy} width={bf} height={Math.min(x_s, hf)}
+              fill="#3b82f6" fillOpacity={0.22} stroke="#3b82f6" strokeWidth={1} strokeDasharray="4,2" />
+            {x_s > hf && (
+              <rect x={webX} y={oy + hf} width={bw} height={x_s - hf}
+                fill="#3b82f6" fillOpacity={0.22} stroke="#3b82f6" strokeWidth={1} strokeDasharray="4,2" />
+            )}
+          </>
+        ) : (
+          <rect x={ox} y={oy} width={bw} height={x_s}
+            fill="#3b82f6" fillOpacity={0.22} stroke="#3b82f6" strokeWidth={1} strokeDasharray="4,2" />
+        )}
         {/* 0.8x label — centred inside stress block, only if block tall enough */}
         {x_s > 14 && (
-          <text x={ox + bw / 2} y={oy + x_s / 2 + 3.5}
+          <text x={ox + bf / 2} y={oy + x_s / 2 + 3.5}
             textAnchor="middle" fontSize={7} fill="#1d4ed8" fontWeight="700">0.8x</text>
         )}
 
         {/* ── Neutral axis — stops at section right edge ── */}
-        <line x1={ox - 6} y1={oy + x_s} x2={NA_LINE_X2} y2={oy + x_s}
+        <line x1={ox - 6} y1={oy + x_s} x2={ox + bf + 5} y2={oy + x_s}
           stroke="#dc2626" strokeWidth={1} strokeDasharray="5,3" />
         {/* N.A. label: left of section, clear of h-dim */}
         <text x={ox - 8} y={oy + x_s - 3}
@@ -109,8 +146,8 @@ export default function BeamSection({ inputs, results }: Props) {
           </g>
         ))}
 
-        {/* ── Compression bars (2 top) ── */}
-        {[ox + coverS + diaS / 2, ox + bw - coverS - diaS / 2].map((bx, i) => (
+        {/* ── Compression bars (2 top) — sit over the web ── */}
+        {[webX + coverS + diaS / 2, webX + bw - coverS - diaS / 2].map((bx, i) => (
           <g key={`c${i}`}>
             <circle cx={bx} cy={oy + coverS + diaS / 2} r={Math.max(diaS * 0.4 + 1, 3.5)} fill="#1e293b" />
             <circle cx={bx} cy={oy + coverS + diaS / 2} r={Math.max(diaS * 0.4, 2.5)}      fill="#a78bfa" />
@@ -121,26 +158,50 @@ export default function BeamSection({ inputs, results }: Props) {
         {/* Horizontal tick at top of cover zone */}
         <line x1={ox} y1={oy + coverS} x2={ox + coverS} y2={oy + coverS}
           stroke="#f97316" strokeWidth={0.8} strokeDasharray="2,2" />
-        {/* Leader going left to a label below the bottom of the section */}
-        <line x1={ox + coverS / 2} y1={oy + coverS}
-              x2={ox + coverS / 2} y2={oy + bh + 10}
+        {/* Leader dropping to a label below the section. Anchored to the web on
+            a T-beam, so it doesn't dangle through empty space beside it. */}
+        <line x1={webX + coverS / 2} y1={oy + coverS}
+              x2={webX + coverS / 2} y2={oy + bh + 14}
           stroke="#f97316" strokeWidth={0.6} strokeDasharray="2,2" />
-        <text x={ox + coverS / 2} y={oy + bh + 20}
+        <text x={webX + coverS / 2} y={oy + bh + 22}
           textAnchor="middle" fontSize={7} fill="#ea580c" fontWeight="600">
           c={inputs.cover}mm
         </text>
 
-        {/* ── Dimension: width (b) — above section ── */}
-        <line x1={ox} y1={oy - 16} x2={ox + bw} y2={oy - 16}
+        {/* ── Dimension: width — above section. For a T this is the flange
+              width (bf); the web width (bw) is called out separately below. ── */}
+        <line x1={ox} y1={oy - 16} x2={ox + bf} y2={oy - 16}
           stroke="#64748b" strokeWidth={0.8}
           markerEnd="url(#bsDimA)" markerStart="url(#bsDimB)" />
         <line x1={ox}      y1={oy - 20} x2={ox}      y2={oy - 12} stroke="#64748b" strokeWidth={0.8} />
-        <line x1={ox + bw} y1={oy - 20} x2={ox + bw} y2={oy - 12} stroke="#64748b" strokeWidth={0.8} />
+        <line x1={ox + bf} y1={oy - 20} x2={ox + bf} y2={oy - 12} stroke="#64748b" strokeWidth={0.8} />
         {/* White background behind label to prevent hatch bleed */}
-        <rect x={ox + bw / 2 - 26} y={oy - 28} width={52} height={12} fill="white" />
-        <text x={ox + bw / 2} y={oy - 19} textAnchor="middle" fontSize={8} fill="#475569" fontWeight="700">
-          b = {inputs.width} mm
+        <rect x={ox + bf / 2 - 30} y={oy - 28} width={60} height={12} fill="white" />
+        <text x={ox + bf / 2} y={oy - 19} textAnchor="middle" fontSize={8} fill="#475569" fontWeight="700">
+          {isT ? `bf = ${bfMm} mm` : `b = ${inputs.width} mm`}
         </text>
+
+        {/* ── T-beam only: flange thickness (hf) + web width (bw) callouts ── */}
+        {isT && (
+          <>
+            {/* hf — leader down the left of the flange */}
+            <line x1={ox - 4} y1={oy} x2={ox - 4} y2={oy + hf}
+              stroke="#0f766e" strokeWidth={0.8}
+              markerEnd="url(#bsDimA)" markerStart="url(#bsDimB)" />
+            <rect x={ox + 2} y={oy + hf / 2 - 5} width={30} height={10} fill="white" fillOpacity={0.85} />
+            <text x={ox + 4} y={oy + hf / 2 + 3} fontSize={6.5} fill="#0f766e" fontWeight="700">
+              hf={hfMm}
+            </text>
+            {/* Flange/web junction line */}
+            <line x1={ox} y1={oy + hf} x2={ox + bf} y2={oy + hf}
+              stroke="#334155" strokeWidth={0.6} strokeDasharray="3,2" />
+            {/* bw — under the web */}
+            <text x={webX + bw / 2} y={oy + bh + 10} textAnchor="middle"
+              fontSize={7} fill="#475569" fontWeight="700">
+              bw = {inputs.width} mm
+            </text>
+          </>
+        )}
 
         {/* ── Dimension: total depth (h) — left of section ── */}
         <line x1={LEFT - 10} y1={oy} x2={LEFT - 10} y2={oy + bh}
@@ -236,13 +297,13 @@ export default function BeamSection({ inputs, results }: Props) {
         )}
 
         {/* ── Bottom data row — below section, guaranteed clear of cover callout ── */}
-        <rect x={ox} y={oy + bh + 26} width={bw} height={13} rx={2} fill="#f8fafc" />
-        <text x={ox + bw / 2} y={oy + bh + 36}
+        <rect x={ox} y={oy + bh + 26} width={bf} height={13} rx={2} fill="#f8fafc" />
+        <text x={ox + bf / 2} y={oy + bh + 36}
           textAnchor="middle" fontSize={7.5} fill="#1e40af" fontWeight="700">
           {n}T{barDia} · As={results.mainBars.As.toFixed(0)} mm²
         </text>
         {/* d / x line further below */}
-        <text x={ox + bw / 2} y={oy + bh + 50}
+        <text x={ox + bf / 2} y={oy + bh + 50}
           textAnchor="middle" fontSize={7} fill="#475569">
           d={d.toFixed(0)} mm · x={x_mm.toFixed(0)} mm · x/d={d > 0 ? (x_mm / d).toFixed(2) : '—'}
         </text>

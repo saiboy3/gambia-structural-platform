@@ -1,6 +1,6 @@
 import type { ColumnInputs, ColumnResults } from '../types/structural';
 import type { CodeFactors } from '../context/BuildingCodeContext';
-import { chooseBars } from './materials';
+import { barArea, chooseBars } from './materials';
 
 export function designColumn(inp: ColumnInputs, _code: Partial<CodeFactors> = {}): ColumnResults {
   const msgs: string[] = [];
@@ -40,7 +40,17 @@ export function designColumn(inp: ColumnInputs, _code: Partial<CodeFactors> = {}
   AsReq = Math.max(AsReq, minAs);
   if (AsReq > maxAs) msgs.push('FAIL: Steel exceeds 4% — increase section size');
 
-  const mainBars = chooseBars(AsReq, 20);
+  // EC2 §9.5.2(4): a polygonal column needs a bar at every corner (so ≥4 for a
+  // rectangle/square), and a circular column needs ≥4 longitudinal bars.
+  // chooseBars() floors at 2, which is right for a beam but not for a column —
+  // a lightly-loaded column governed by As,min would otherwise be detailed with
+  // 2 bars, which is not buildable and not code-compliant.
+  const chosen = chooseBars(AsReq, 20);
+  const minBarCount = 4;
+  const barCount = Math.max(chosen.count, minBarCount);
+  const mainBars = barCount === chosen.count
+    ? chosen
+    : { dia: chosen.dia, count: barCount, As: barCount * barArea(chosen.dia) };
 
   // Links (EC2 9.5.3): ≥ 6mm, ≤ min(12φ, 0.6b, 240mm)
   const linkDia = Math.max(6, Math.floor(mainBars.dia * 0.25 / 2) * 2);
