@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { ChevronRight, ChevronLeft, CheckCircle } from 'lucide-react';
 import Button from '../ui/Button';
 import { getMaterial } from '../../utils/materials';
+import { lookupTerm } from '../../utils/termGlossary';
 import type { BeamInputs, ConcreteGrade, RebarGrade } from '../../types/structural';
 
 interface Props {
@@ -251,7 +252,9 @@ export default function GuidedBeam({ initial, onDone, onCancel }: Props) {
           ))}
         </div>
         <div className="mt-2 text-xs text-slate-500">
-          <strong>C25/30</strong> is standard for Gambia structural concrete. Use C30/37+ for aggressive exposure (coastal, foundation).
+          <span className="text-blue-400 mr-1">ⓘ</span>
+          <strong>{state.material.concrete}</strong> — {lookupTerm(state.material.concrete)?.meaning}{' '}
+          {lookupTerm(state.material.concrete)?.use}
         </div>
       </label>
 
@@ -267,7 +270,9 @@ export default function GuidedBeam({ initial, onDone, onCancel }: Props) {
           ))}
         </div>
         <div className="mt-2 text-xs text-slate-500">
-          <strong>B500B</strong> is the standard deformed high-yield bar used in Gambia. B250 (mild steel) is obsolete but still found on site.
+          <span className="text-blue-400 mr-1">ⓘ</span>
+          <strong>{state.material.rebar}</strong> — {lookupTerm(state.material.rebar)?.meaning}{' '}
+          {lookupTerm(state.material.rebar)?.use}
         </div>
       </label>
 

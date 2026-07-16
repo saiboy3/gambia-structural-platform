@@ -1,3 +1,4 @@
+import { lookupTerm } from '../../utils/termGlossary';
 
 interface InputFieldProps {
   label: string;
@@ -45,6 +46,8 @@ interface SelectFieldProps {
 }
 
 export function SelectField({ label, value, onChange, options }: SelectFieldProps) {
+  const selected = options.find(o => o.value === value);
+  const info = lookupTerm(value, selected?.label);
   return (
     <div className="flex flex-col gap-1">
       <label className="text-xs font-medium text-slate-600">{label}</label>
@@ -58,6 +61,13 @@ export function SelectField({ label, value, onChange, options }: SelectFieldProp
           <option key={o.value} value={o.value}>{o.label}</option>
         ))}
       </select>
+      {info && (
+        <p className="text-[11px] leading-snug text-slate-500">
+          <span className="text-blue-400 mr-1">ⓘ</span>
+          {info.meaning}
+          {info.use && <span className="text-slate-400"> {info.use}</span>}
+        </p>
+      )}
     </div>
   );
 }
