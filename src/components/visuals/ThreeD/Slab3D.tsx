@@ -5,13 +5,15 @@ import * as THREE from 'three';
 import FitCamera from './FitCamera';
 import type { SlabInputs, SlabResults } from '../../../types/structural';
 
-interface Props { inputs: SlabInputs; results: SlabResults }
+interface PropsBase { inputs: SlabInputs; results: SlabResults }
+/** `still` freezes the view so a captured report figure is deterministic. */
+type Props = PropsBase & { still?: boolean };
 type MeshProps = Props & { onFit?: (d: number) => void };
 
-function SlabMesh({ inputs, results, onFit }: MeshProps) {
+function SlabMesh({ inputs, results, onFit, still }: MeshProps) {
   const groupRef = useRef<THREE.Group>(null);
   useFrame((_, delta) => {
-    if (groupRef.current) groupRef.current.rotation.y += delta * 0.2;
+    if (!still && groupRef.current) groupRef.current.rotation.y += delta * 0.2;
   });
 
   // Scale: 1 unit = 500mm
@@ -94,7 +96,7 @@ export default function Slab3D(props: Props) {
           <SlabMesh {...props} onFit={handleFit} />
           <Environment preset="city" />
         </Suspense>
-        <OrbitControls enablePan={false} minDistance={dist * 0.35} maxDistance={dist * 2.5} autoRotate autoRotateSpeed={0.8} />
+        <OrbitControls enablePan={false} minDistance={dist * 0.35} maxDistance={dist * 2.5} autoRotate={!props.still} autoRotateSpeed={0.8} />
       </Canvas>
       <p className="text-center text-xs text-slate-400 py-1.5 bg-slate-900">Drag to orbit · Scroll to zoom</p>
     </div>

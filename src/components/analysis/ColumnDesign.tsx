@@ -225,7 +225,7 @@ export default function ColumnDesign() {
               steps={columnCalcNotes(inp, res, factors)}
             />
             <div className="mt-3 flex justify-end">
-              <ReportButton data={buildColumnReport(inp, res, factors)} threeD={<Column3D inputs={inp} results={res} />} />
+              <ReportButton data={buildColumnReport(inp, res, factors)} threeD={<Column3D inputs={inp} results={res} still />} />
             </div>
             <SaveDesignPanel memberType="column"
               inputs={inp as unknown as Record<string, unknown>}

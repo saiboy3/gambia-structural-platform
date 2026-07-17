@@ -121,7 +121,7 @@ export default function SlabDesign() {
               steps={slabCalcNotes(inp, res, factors)}
             />
             <div className="mt-3 flex justify-end">
-              <ReportButton data={buildSlabReport(inp, res, factors)} threeD={<Slab3D inputs={inp} results={res} />} />
+              <ReportButton data={buildSlabReport(inp, res, factors)} threeD={<Slab3D inputs={inp} results={res} still />} />
             </div>
             <SaveDesignPanel memberType="slab"
               inputs={inp as unknown as Record<string, unknown>}

@@ -5,13 +5,15 @@ import * as THREE from 'three';
 import FitCamera from './FitCamera';
 import type { ColumnInputs, ColumnResults } from '../../../types/structural';
 
-interface Props { inputs: ColumnInputs; results: ColumnResults }
+interface PropsBase { inputs: ColumnInputs; results: ColumnResults }
+/** `still` freezes the view so a captured report figure is deterministic. */
+type Props = PropsBase & { still?: boolean };
 type MeshProps = Props & { onFit?: (d: number) => void };
 
-function ColumnMesh({ inputs, results, onFit }: MeshProps) {
+function ColumnMesh({ inputs, results, onFit, still }: MeshProps) {
   const groupRef = useRef<THREE.Group>(null);
   useFrame((_, delta) => {
-    if (groupRef.current) groupRef.current.rotation.y += delta * 0.3;
+    if (!still && groupRef.current) groupRef.current.rotation.y += delta * 0.3;
   });
 
   const isCirc = inputs.shape === 'circular';
@@ -147,7 +149,7 @@ export default function Column3D(props: Props) {
           <ColumnMesh {...props} onFit={handleFit} />
           <Environment preset="city" />
         </Suspense>
-        <OrbitControls enablePan={false} minDistance={dist * 0.35} maxDistance={dist * 2.5} autoRotate autoRotateSpeed={1} />
+        <OrbitControls enablePan={false} minDistance={dist * 0.35} maxDistance={dist * 2.5} autoRotate={!props.still} autoRotateSpeed={1} />
       </Canvas>
       <p className="text-center text-xs text-slate-400 py-1.5 bg-slate-900">Drag to orbit · Scroll to zoom</p>
     </div>
