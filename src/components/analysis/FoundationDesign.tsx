@@ -8,6 +8,8 @@ import ResultRow from '../ui/ResultRow';
 import FoundationSection from '../visuals/FoundationSection';
 import Foundation3D from '../visuals/ThreeD/Foundation3D';
 import CalcSheet from '../ui/CalcSheet';
+import ReportButton from '../report/ReportButton';
+import { buildFoundationReport } from '../../utils/reportBuilders';
 import SaveDesignPanel from '../ui/SaveDesignPanel';
 import ProjectSelector from '../projects/ProjectSelector';
 import { getMaterial } from '../../utils/materials';
@@ -111,6 +113,9 @@ export default function FoundationDesign() {
               codeLabel={factors.label}
               steps={foundationCalcNotes(inp, res, factors)}
             />
+            <div className="mt-3 flex justify-end">
+              <ReportButton data={buildFoundationReport(inp, res, factors)} />
+            </div>
             <SaveDesignPanel memberType="foundation"
               inputs={inp as unknown as Record<string, unknown>}
               results={res as unknown as Record<string, unknown>} />

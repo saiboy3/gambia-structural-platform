@@ -15,6 +15,8 @@ import type { PortalFrameInputs } from '../../utils/portalFrameCalculations';
 import { useBuildingCode } from '../../context/BuildingCodeContext';
 import CalcSheet from '../ui/CalcSheet';
 import { portalFrameCalcNotes } from '../../utils/calcNotesSteel';
+import ReportButton from '../report/ReportButton';
+import { buildPortalFrameReport } from '../../utils/reportBuildersSteel';
 
 const defaultInp: PortalFrameInputs = {
   span: 18,
@@ -395,6 +397,9 @@ export default function PortalFrame() {
                 codeLabel={factors.label}
                 steps={portalFrameCalcNotes(inp, res, factors)}
               />
+              <div className="mt-3 flex justify-end">
+                <ReportButton data={buildPortalFrameReport(inp, res, factors)} />
+              </div>
               <SaveDesignPanel memberType="beam"
                 inputs={inp as unknown as Record<string, unknown>}
                 results={res as unknown as Record<string, unknown>} />

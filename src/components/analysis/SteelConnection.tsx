@@ -15,6 +15,8 @@ import type { ConnectionInputs, ConnectionType } from '../../utils/steelConnecti
 import { useBuildingCode } from '../../context/BuildingCodeContext';
 import CalcSheet from '../ui/CalcSheet';
 import { steelConnectionCalcNotes } from '../../utils/calcNotesSteel';
+import ReportButton from '../report/ReportButton';
+import { buildSteelConnectionReport } from '../../utils/reportBuildersSteel';
 
 const defaultInp: ConnectionInputs = {
   type: 'end-plate',
@@ -302,6 +304,9 @@ export default function SteelConnection() {
                 codeLabel={factors.label}
                 steps={steelConnectionCalcNotes(inp, res, factors)}
               />
+              <div className="mt-3 flex justify-end">
+                <ReportButton data={buildSteelConnectionReport(inp, res, factors)} />
+              </div>
               <SaveDesignPanel memberType="beam"
                 inputs={inp as unknown as Record<string, unknown>}
                 results={res as unknown as Record<string, unknown>} />

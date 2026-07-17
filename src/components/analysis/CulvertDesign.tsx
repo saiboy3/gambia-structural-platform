@@ -15,6 +15,8 @@ import { useBuildingCode } from '../../context/BuildingCodeContext';
 import type { CulvertInputs } from '../../utils/culvertCalculations';
 import CalcSheet from '../ui/CalcSheet';
 import { culvertCalcNotes } from '../../utils/calcNotesTransport';
+import ReportButton from '../report/ReportButton';
+import { buildCulvertReport } from '../../utils/reportBuildersTransport';
 
 const defaultInp: CulvertInputs = {
   span: 3.0,
@@ -269,6 +271,9 @@ export default function CulvertDesign() {
                 codeLabel={factors.label}
                 steps={culvertCalcNotes(inp, res, factors)}
               />
+              <div className="mt-3 flex justify-end">
+                <ReportButton data={buildCulvertReport(inp, res, factors)} />
+              </div>
               <SaveDesignPanel memberType="foundation"
                 inputs={inp as unknown as Record<string, unknown>}
                 results={res as unknown as Record<string, unknown>} />

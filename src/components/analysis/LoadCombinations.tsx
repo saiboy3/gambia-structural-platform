@@ -6,7 +6,9 @@ import { getCombinations } from '../../utils/loadCombinations';
 import type { LoadValues, Combination } from '../../utils/loadCombinations';
 import { AlertTriangle, CheckCircle } from 'lucide-react';
 import CalcSheet from '../ui/CalcSheet';
+import ReportButton from '../report/ReportButton';
 import { loadCombinationsCalcNotes } from '../../utils/calcNotesLoads';
+import { buildLoadCombinationsReport } from '../../utils/reportBuildersLoads';
 
 const TYPE_COLOR: Record<Combination['type'], string> = {
   ULS: 'bg-red-100 text-red-700',
@@ -163,6 +165,10 @@ export default function LoadCombinations() {
         codeLabel={factors.label}
         steps={loadCombinationsCalcNotes(loads, combos, { ...factors, code })}
       />
+
+      <div className="mt-3 flex justify-end">
+        <ReportButton data={buildLoadCombinationsReport(loads, combos, { ...factors, code })} />
+      </div>
     </div>
   );
 }

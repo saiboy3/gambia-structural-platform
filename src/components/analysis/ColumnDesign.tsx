@@ -12,6 +12,8 @@ import UtilisationBars from '../visuals/UtilisationBars';
 import type { UtilCheck } from '../visuals/UtilisationBars';
 import OptimiseSuggestion from '../ui/OptimiseSuggestion';
 import CalcSheet from '../ui/CalcSheet';
+import ReportButton from '../report/ReportButton';
+import { buildColumnReport } from '../../utils/reportBuilders';
 import SaveDesignPanel from '../ui/SaveDesignPanel';
 import ProjectSelector from '../projects/ProjectSelector';
 import PMDiagram from '../visuals/PMDiagram';
@@ -222,6 +224,9 @@ export default function ColumnDesign() {
               codeLabel={factors.label}
               steps={columnCalcNotes(inp, res, factors)}
             />
+            <div className="mt-3 flex justify-end">
+              <ReportButton data={buildColumnReport(inp, res, factors)} />
+            </div>
             <SaveDesignPanel memberType="column"
               inputs={inp as unknown as Record<string, unknown>}
               results={res as unknown as Record<string, unknown>} />

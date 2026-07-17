@@ -4,7 +4,9 @@ import Button, { IconButton } from '../ui/Button';
 import { useBuildingCode } from '../../context/BuildingCodeContext';
 import { Calculator, ChevronDown, ChevronUp } from 'lucide-react';
 import CalcSheet from '../ui/CalcSheet';
+import ReportButton from '../report/ReportButton';
 import { loadCalcNotes } from '../../utils/calcNotesLoads';
+import { buildLoadCalcReport } from '../../utils/reportBuildersLoads';
 
 interface OccupancyRow {
   category: string;
@@ -224,6 +226,10 @@ export default function LoadCalculator() {
         codeLabel={factors.label}
         steps={loadCalcNotes(deadItems, selectedOcc, qk, { ...factors, code })}
       />
+
+      <div className="mt-3 flex justify-end">
+        <ReportButton data={buildLoadCalcReport(deadItems, selectedOcc, qk, { ...factors, code })} />
+      </div>
 
       {/* Dead load reference */}
       <Card title={

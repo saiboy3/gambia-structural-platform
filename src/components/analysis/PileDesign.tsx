@@ -14,6 +14,8 @@ import { designPile } from '../../utils/pileCalculations';
 import type { PileInputs, SoilLayer } from '../../utils/pileCalculations';
 import OptimiseSuggestion from '../ui/OptimiseSuggestion';
 import CalcSheet from '../ui/CalcSheet';
+import ReportButton from '../report/ReportButton';
+import { buildPileReport } from '../../utils/reportBuilders';
 import { pileCalcNotes } from '../../utils/calcNotesPileMasonry';
 import { useBuildingCode } from '../../context/BuildingCodeContext';
 
@@ -283,6 +285,11 @@ export default function PileDesign() {
                 codeLabel={factors.label}
                 steps={pileCalcNotes(inp, res, factors)}
               />
+
+              <div className="mt-3 flex justify-end">
+                <ReportButton data={buildPileReport(inp, res, factors)} />
+              </div>
+
               <SaveDesignPanel memberType="foundation"
                 inputs={inp as unknown as Record<string, unknown>}
                 results={res as unknown as Record<string, unknown>} />

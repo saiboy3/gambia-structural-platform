@@ -8,6 +8,8 @@ import ResultRow from '../ui/ResultRow';
 import SaveDesignPanel from '../ui/SaveDesignPanel';
 import ProjectSelector from '../projects/ProjectSelector';
 import CalcSheet from '../ui/CalcSheet';
+import ReportButton from '../report/ReportButton';
+import { buildRetainingWallReport } from '../../utils/reportBuilders';
 import { getMaterial } from '../../utils/materials';
 import { designRetainingWall } from '../../utils/retainingWallCalculations';
 import { retainingWallCalcNotes } from '../../utils/calcNotesGeotechSlab';
@@ -181,6 +183,11 @@ export default function RetainingWallDesign() {
                 codeLabel={factors.label}
                 steps={retainingWallCalcNotes(inp, res, factors)}
               />
+
+              <div className="mt-3 flex justify-end">
+                <ReportButton data={buildRetainingWallReport(inp, res, factors)} />
+              </div>
+
               <SaveDesignPanel memberType="retaining-wall"
                 inputs={inp as unknown as Record<string, unknown>}
                 results={res as unknown as Record<string, unknown>} />

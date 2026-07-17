@@ -6,6 +6,8 @@ import Badge from '../ui/Badge';
 import ResultRow from '../ui/ResultRow';
 import CalcSheet from '../ui/CalcSheet';
 import { quickDesignCalcNotes } from '../../utils/calcNotesQuickDesign';
+import ReportButton from '../report/ReportButton';
+import { buildQuickDesignReport } from '../../utils/reportBuildersTransport';
 import { useBuildingCode } from '../../context/BuildingCodeContext';
 import {
   runQuickDesign,
@@ -478,6 +480,9 @@ function ResultsPage({
         codeLabel={factors.label}
         steps={quickDesignCalcNotes(inp, res, factors)}
       />
+      <div className="mt-3 flex justify-end">
+        <ReportButton data={buildQuickDesignReport(inp, res, factors)} />
+      </div>
     </div>
   );
 }

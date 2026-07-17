@@ -12,6 +12,8 @@ import { designPavement } from '../../utils/pavementCalculations';
 import type { PavementInputs, RoadClass, PavementType, SubgradeType, TrafficGrowth } from '../../utils/pavementCalculations';
 import CalcSheet from '../ui/CalcSheet';
 import { pavementCalcNotes } from '../../utils/calcNotesTransport';
+import ReportButton from '../report/ReportButton';
+import { buildPavementReport } from '../../utils/reportBuildersTransport';
 import { useBuildingCode } from '../../context/BuildingCodeContext';
 
 const defaultInp: PavementInputs = {
@@ -231,6 +233,9 @@ export default function PavementDesign() {
                 codeLabel={factors.label}
                 steps={pavementCalcNotes(inp, res, factors)}
               />
+              <div className="mt-3 flex justify-end">
+                <ReportButton data={buildPavementReport(inp, res, factors)} />
+              </div>
               <SaveDesignPanel memberType="foundation"
                 inputs={inp as unknown as Record<string, unknown>}
                 results={res as unknown as Record<string, unknown>} />

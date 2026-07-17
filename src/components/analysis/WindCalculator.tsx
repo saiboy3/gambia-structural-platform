@@ -7,7 +7,9 @@ import { calcWind, GAMBIA_WIND, TERRAIN } from '../../utils/windCalculations';
 import type { WindInputs, WindResults, TerrainCategory, WindZone } from '../../utils/windCalculations';
 import { Wind } from 'lucide-react';
 import CalcSheet from '../ui/CalcSheet';
+import ReportButton from '../report/ReportButton';
 import { windCalcNotes } from '../../utils/calcNotesLoads';
+import { buildWindReport } from '../../utils/reportBuildersLoads';
 
 const defaultInputs: WindInputs = {
   vb0: 37, zone: 'Coastal', terrain: 'II',
@@ -192,11 +194,16 @@ export default function WindCalculator() {
       </div>
 
       {res && (
-        <CalcSheet
-          title="Wind Load Calculation Sheet"
-          codeLabel="EC1-1-4"
-          steps={windCalcNotes(inp, res)}
-        />
+        <>
+          <CalcSheet
+            title="Wind Load Calculation Sheet"
+            codeLabel="EC1-1-4"
+            steps={windCalcNotes(inp, res)}
+          />
+          <div className="mt-3 flex justify-end">
+            <ReportButton data={buildWindReport(inp, res)} />
+          </div>
+        </>
       )}
     </div>
   );

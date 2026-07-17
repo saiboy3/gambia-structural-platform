@@ -8,6 +8,8 @@ import ResultRow from '../ui/ResultRow';
 import SaveDesignPanel from '../ui/SaveDesignPanel';
 import ProjectSelector from '../projects/ProjectSelector';
 import CalcSheet from '../ui/CalcSheet';
+import ReportButton from '../report/ReportButton';
+import { buildStaircaseReport } from '../../utils/reportBuilders';
 import { getMaterial } from '../../utils/materials';
 import { designStaircase } from '../../utils/staircaseCalculations';
 import { staircaseCalcNotes } from '../../utils/calcNotesGeotechSlab';
@@ -117,6 +119,11 @@ export default function StaircaseDesign() {
                 codeLabel={factors.label}
                 steps={staircaseCalcNotes(inp, res, factors)}
               />
+
+              <div className="mt-3 flex justify-end">
+                <ReportButton data={buildStaircaseReport(inp, res, factors)} />
+              </div>
+
               <SaveDesignPanel memberType="staircase"
                 inputs={inp as unknown as Record<string, unknown>}
                 results={res as unknown as Record<string, unknown>} />

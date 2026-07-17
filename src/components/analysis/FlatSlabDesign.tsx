@@ -11,6 +11,8 @@ import type { UtilCheck } from '../visuals/UtilisationBars';
 import SaveDesignPanel from '../ui/SaveDesignPanel';
 import ProjectSelector from '../projects/ProjectSelector';
 import CalcSheet from '../ui/CalcSheet';
+import ReportButton from '../report/ReportButton';
+import { buildFlatSlabReport } from '../../utils/reportBuilders';
 import { getMaterial } from '../../utils/materials';
 import { designFlatSlab } from '../../utils/flatSlabCalculations';
 import { flatSlabCalcNotes } from '../../utils/calcNotesGeotechSlab';
@@ -311,6 +313,9 @@ export default function FlatSlabDesign() {
                 codeLabel={factors.label}
                 steps={flatSlabCalcNotes(inp, res, factors)}
               />
+              <div className="mt-3 flex justify-end">
+                <ReportButton data={buildFlatSlabReport(inp, res, factors)} />
+              </div>
               <SaveDesignPanel memberType="slab"
                 inputs={inp as unknown as Record<string, unknown>}
                 results={res as unknown as Record<string, unknown>} />

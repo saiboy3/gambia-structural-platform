@@ -12,6 +12,8 @@ import type { SteelMemberInputs } from '../../utils/steelCalculations';
 import { useBuildingCode } from '../../context/BuildingCodeContext';
 import CalcSheet from '../ui/CalcSheet';
 import { steelCalcNotes } from '../../utils/calcNotesSteel';
+import ReportButton from '../report/ReportButton';
+import { buildSteelReport } from '../../utils/reportBuildersSteel';
 
 const defaultInputs: SteelMemberInputs = {
   sectionName: 'UB 305×165×40',
@@ -115,6 +117,9 @@ export default function SteelDesign() {
                 codeLabel={factors.label}
                 steps={steelCalcNotes(inp, res, factors)}
               />
+              <div className="mt-3 flex justify-end">
+                <ReportButton data={buildSteelReport(inp, res, factors)} />
+              </div>
               <SaveDesignPanel memberType="steel"
                 inputs={inp as unknown as Record<string, unknown>}
                 results={res as unknown as Record<string, unknown>} />

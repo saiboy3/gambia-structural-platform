@@ -17,6 +17,8 @@ import OptimiseSuggestion from '../ui/OptimiseSuggestion';
 import type { ConcreteGrade, RebarGrade } from '../../types/structural';
 import type { PileCapInputs, PileArrangement } from '../../utils/pileCapCalculations';
 import CalcSheet from '../ui/CalcSheet';
+import ReportButton from '../report/ReportButton';
+import { buildPileCapReport } from '../../utils/reportBuilders';
 import { pileCapCalcNotes } from '../../utils/calcNotesPileMasonry';
 
 const defaultInp: PileCapInputs = {
@@ -230,6 +232,11 @@ export default function PileCapDesign() {
                 codeLabel={factors.label}
                 steps={pileCapCalcNotes(inp, res, factors)}
               />
+
+              <div className="mt-3 flex justify-end">
+                <ReportButton data={buildPileCapReport(inp, res, factors)} />
+              </div>
+
               <SaveDesignPanel memberType="foundation"
                 inputs={inp as unknown as Record<string, unknown>}
                 results={res as unknown as Record<string, unknown>} />

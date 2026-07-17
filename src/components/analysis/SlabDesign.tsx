@@ -8,6 +8,8 @@ import ResultRow from '../ui/ResultRow';
 import SlabSection from '../visuals/SlabSection';
 import Slab3D from '../visuals/ThreeD/Slab3D';
 import CalcSheet from '../ui/CalcSheet';
+import ReportButton from '../report/ReportButton';
+import { buildSlabReport } from '../../utils/reportBuilders';
 import SaveDesignPanel from '../ui/SaveDesignPanel';
 import ProjectSelector from '../projects/ProjectSelector';
 import { getMaterial } from '../../utils/materials';
@@ -118,6 +120,9 @@ export default function SlabDesign() {
               codeLabel={factors.label}
               steps={slabCalcNotes(inp, res, factors)}
             />
+            <div className="mt-3 flex justify-end">
+              <ReportButton data={buildSlabReport(inp, res, factors)} />
+            </div>
             <SaveDesignPanel memberType="slab"
               inputs={inp as unknown as Record<string, unknown>}
               results={res as unknown as Record<string, unknown>} />

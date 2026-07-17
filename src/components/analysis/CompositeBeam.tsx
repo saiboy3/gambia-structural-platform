@@ -16,6 +16,8 @@ import type { CompositeBeamInputs } from '../../utils/compositeBeamCalculations'
 import { useBuildingCode } from '../../context/BuildingCodeContext';
 import CalcSheet from '../ui/CalcSheet';
 import { compositeBeamCalcNotes } from '../../utils/calcNotesSteel';
+import ReportButton from '../report/ReportButton';
+import { buildCompositeBeamReport } from '../../utils/reportBuildersSteel';
 
 const UB_SECTIONS = PORTAL_SECTIONS.filter(s => s.name.startsWith('UB'));
 
@@ -215,6 +217,9 @@ export default function CompositeBeam() {
                 codeLabel={factors.label}
                 steps={compositeBeamCalcNotes(inp, res, factors)}
               />
+              <div className="mt-3 flex justify-end">
+                <ReportButton data={buildCompositeBeamReport(inp, res, factors)} />
+              </div>
               <SaveDesignPanel memberType="beam"
                 inputs={inp as unknown as Record<string, unknown>}
                 results={res as unknown as Record<string, unknown>} />

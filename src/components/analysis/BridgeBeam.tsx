@@ -15,6 +15,8 @@ import { useBuildingCode } from '../../context/BuildingCodeContext';
 import type { BridgeBeamInputs } from '../../utils/bridgeBeamCalculations';
 import CalcSheet from '../ui/CalcSheet';
 import { bridgeBeamCalcNotes } from '../../utils/calcNotesTransport';
+import ReportButton from '../report/ReportButton';
+import { buildBridgeBeamReport } from '../../utils/reportBuildersTransport';
 
 const defaultInp: BridgeBeamInputs = {
   beamType: 'T-beam',
@@ -213,6 +215,9 @@ export default function BridgeBeam() {
                 codeLabel={factors.label}
                 steps={bridgeBeamCalcNotes(inp, res, factors)}
               />
+              <div className="mt-3 flex justify-end">
+                <ReportButton data={buildBridgeBeamReport(inp, res, factors)} />
+              </div>
               <SaveDesignPanel memberType="beam"
                 inputs={inp as unknown as Record<string, unknown>}
                 results={res as unknown as Record<string, unknown>} />

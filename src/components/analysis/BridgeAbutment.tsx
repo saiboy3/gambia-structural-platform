@@ -15,6 +15,8 @@ import { useBuildingCode } from '../../context/BuildingCodeContext';
 import type { AbutmentInputs } from '../../utils/abutmentCalculations';
 import CalcSheet from '../ui/CalcSheet';
 import { abutmentCalcNotes } from '../../utils/calcNotesTransport';
+import ReportButton from '../report/ReportButton';
+import { buildAbutmentReport } from '../../utils/reportBuildersTransport';
 
 const defaultInp: AbutmentInputs = {
   stemHeight: 4.0,
@@ -432,6 +434,9 @@ export default function BridgeAbutment() {
                 codeLabel={factors.label}
                 steps={abutmentCalcNotes(inp, res, factors)}
               />
+              <div className="mt-3 flex justify-end">
+                <ReportButton data={buildAbutmentReport(inp, res, factors)} />
+              </div>
               <SaveDesignPanel memberType="foundation"
                 inputs={inp as unknown as Record<string, unknown>}
                 results={res as unknown as Record<string, unknown>} />

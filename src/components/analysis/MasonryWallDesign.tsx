@@ -14,6 +14,8 @@ import { designMasonryWall } from '../../utils/masonryCalculations';
 import { useBuildingCode } from '../../context/BuildingCodeContext';
 import type { MasonryInputs, MasonryUnit, MortarClass, WallType } from '../../utils/masonryCalculations';
 import CalcSheet from '../ui/CalcSheet';
+import ReportButton from '../report/ReportButton';
+import { buildMasonryReport } from '../../utils/reportBuilders';
 import { masonryCalcNotes } from '../../utils/calcNotesPileMasonry';
 
 const defaultInp: MasonryInputs = {
@@ -257,6 +259,11 @@ export default function MasonryWallDesign() {
                 codeLabel={factors.label}
                 steps={masonryCalcNotes(inp, res, factors)}
               />
+
+              <div className="mt-3 flex justify-end">
+                <ReportButton data={buildMasonryReport(inp, res, factors)} />
+              </div>
+
               <SaveDesignPanel memberType="foundation"
                 inputs={inp as unknown as Record<string, unknown>}
                 results={res as unknown as Record<string, unknown>} />
