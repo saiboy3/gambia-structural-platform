@@ -389,7 +389,10 @@ export function buildFoundationReport(
         rows: [
           { label: 'Bending check', value: res.bendingOK ? 'Pass' : 'Fail', key: true },
           { label: 'Punching shear check', value: res.punchingOK ? 'Pass' : 'Fail', key: true },
-          { label: 'Factor of safety, sliding', value: res.FoS_sliding.toFixed(2) },
+          // FoS_sliding is Infinity when there is no horizontal load — show that
+          // rather than a literal "Infinity" in a record issued for approval.
+          { label: 'Factor of safety, sliding',
+            value: Number.isFinite(res.FoS_sliding) ? res.FoS_sliding.toFixed(2) : 'N/A — no horizontal load' },
           { label: 'Sliding check', value: res.slidingOK ? 'Pass' : 'Fail', key: true },
         ],
       },
