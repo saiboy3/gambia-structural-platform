@@ -74,7 +74,7 @@ function SlabMesh({ inputs, results }: Props) {
 export default function Slab3D(props: Props) {
   return (
     <div className="w-full rounded-xl overflow-hidden bg-gradient-to-b from-slate-800 to-slate-900 shadow-lg ring-1 ring-slate-700/50" style={{ height: 320 }}>
-      <Canvas shadows camera={{ position: [6, 5, 6], fov: 45 }}>
+      <Canvas shadows camera={{ position: [6, 5, 6], fov: 45 }} gl={{ preserveDrawingBuffer: true }}>
         <ambientLight intensity={0.5} />
         <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
         <pointLight position={[-5, 5, -5]} intensity={0.5} />

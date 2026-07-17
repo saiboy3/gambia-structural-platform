@@ -394,6 +394,11 @@ button.bg-white.shadow.text-blue-700 {
 .rep-fig { margin: 0 0 6mm; page-break-inside: avoid; break-inside: avoid; }
 .rep-fig-body { border: 0.5pt solid #cbd5e1; padding: 2mm; }
 .rep-fig-body svg { width: 100%; height: auto; }
+/* The 3D view is a raster capture of a WebGL canvas — the one bitmap in an
+   otherwise vector document. Dark background is preserved deliberately so it
+   reads as a rendered view rather than a failed drawing. */
+.rep-fig-3d { background: #0f172a; padding: 0; }
+.rep-fig-3d img { display: block; width: 100%; height: auto; }
 .rep-fig figcaption {
   font-size: 7.6pt;
   font-style: italic;

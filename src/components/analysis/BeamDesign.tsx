@@ -411,7 +411,7 @@ export default function BeamDesign() {
                 <CalcSheet title="Beam Calculation Sheet" codeLabel={factors.label} steps={beamCalcNotes(inp, res, factors)} />
 
                 <div className="mt-3 flex justify-end">
-                  <ReportButton data={buildBeamReport(inp, res, factors)} />
+                  <ReportButton data={buildBeamReport(inp, res, factors)} threeD={<Beam3D inputs={inp} results={res} />} />
                 </div>
 
                 <SaveDesignPanel memberType="beam"

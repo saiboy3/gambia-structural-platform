@@ -52,6 +52,8 @@ export interface ReportSections {
   messages: boolean;
   calcs: boolean;
   visuals: boolean;
+  /** The 3D reinforcement view, rasterised from its WebGL canvas. */
+  threeD: boolean;
   signature: boolean;
 }
 
@@ -62,6 +64,9 @@ export const DEFAULT_SECTIONS: ReportSections = {
   messages: true,
   calcs: true,
   visuals: true,
+  // Off by default: it's a rasterised image in an otherwise vector document,
+  // and it illustrates rather than evidences the design.
+  threeD: false,
   signature: true,
 };
 

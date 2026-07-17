@@ -110,10 +110,12 @@ interface Props {
   engineerName: string;
   codeLabel: string;
   codeDescription: string;
+  /** PNG data URL captured from the module's WebGL canvas, if requested. */
+  image3d?: string | null;
 }
 
 export default function PrintReport({
-  data, sections, meta, project, engineerName, codeLabel, codeDescription,
+  data, sections, meta, project, engineerName, codeLabel, codeDescription, image3d,
 }: Props) {
   const now = new Date();
   const status = data.status ? STATUS_TEXT[data.status] : undefined;
@@ -250,18 +252,33 @@ export default function PrintReport({
         </section>
       )}
 
-      {/* ── Diagrams ── */}
-      {sections.visuals && (data.visuals?.length ?? 0) > 0 && (
-        <section className="rep-break">
-          <SectionTitle n={num()}>Diagrams</SectionTitle>
-          {data.visuals!.map((v, i) => (
-            <figure key={i} className="rep-fig rep-avoid">
-              <div className="rep-fig-body">{v.node}</div>
-              <figcaption>Figure {i + 1} — {v.label}</figcaption>
-            </figure>
-          ))}
-        </section>
-      )}
+      {/* ── Diagrams (2D vector figures, then the rasterised 3D view) ── */}
+      {(() => {
+        const figs = sections.visuals ? (data.visuals ?? []) : [];
+        const show3d = sections.threeD && !!image3d;
+        if (figs.length === 0 && !show3d) return null;
+        return (
+          <section className="rep-break">
+            <SectionTitle n={num()}>Diagrams</SectionTitle>
+            {figs.map((v, i) => (
+              <figure key={i} className="rep-fig rep-avoid">
+                <div className="rep-fig-body">{v.node}</div>
+                <figcaption>Figure {i + 1} — {v.label}</figcaption>
+              </figure>
+            ))}
+            {show3d && (
+              <figure className="rep-fig rep-avoid">
+                <div className="rep-fig-body rep-fig-3d">
+                  <img src={image3d!} alt="3D reinforcement view" />
+                </div>
+                <figcaption>
+                  Figure {figs.length + 1} — 3D reinforcement arrangement (indicative)
+                </figcaption>
+              </figure>
+            )}
+          </section>
+        );
+      })()}
 
       <div className="rep-end">— End of calculation record —</div>
     </div>

@@ -114,7 +114,7 @@ export default function FoundationDesign() {
               steps={foundationCalcNotes(inp, res, factors)}
             />
             <div className="mt-3 flex justify-end">
-              <ReportButton data={buildFoundationReport(inp, res, factors)} />
+              <ReportButton data={buildFoundationReport(inp, res, factors)} threeD={<Foundation3D inputs={inp} results={res} />} />
             </div>
             <SaveDesignPanel memberType="foundation"
               inputs={inp as unknown as Record<string, unknown>}
