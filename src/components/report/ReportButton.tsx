@@ -264,10 +264,14 @@ export default function ReportButton({ data, projectId, threeD }: Props) {
             </div>
           </div>
 
-          {/* Off-screen 3D view, mounted only when the section is ticked. Kept
-              rendered (not display:none) so WebGL actually produces frames —
-              a hidden canvas never paints, and would capture blank. */}
-          {threeD && sections.threeD && (
+          {/* Off-screen 3D view — mounted as soon as the dialog opens (not only
+              when the section is ticked), so WebGL has fully warmed up by the
+              time the user clicks Generate: the mesh is painted and the drei
+              Environment HDR has loaded. Mounting on-tick raced both, capturing
+              a blank or flat-lit frame. Kept rendered (not display:none) so the
+              canvas actually produces frames; a hidden canvas never paints. The
+              capture itself still honours the checkbox. */}
+          {threeD && (
             <div
               ref={holderRef}
               aria-hidden
