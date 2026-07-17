@@ -1,12 +1,14 @@
-import { useRef, Suspense } from 'react';
+import { useRef, useState, useCallback, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Environment, Text } from '@react-three/drei';
 import * as THREE from 'three';
+import FitCamera from './FitCamera';
 import type { BeamInputs, BeamResults } from '../../../types/structural';
 
 interface Props { inputs: BeamInputs; results: BeamResults }
+type MeshProps = Props & { onFit?: (d: number) => void };
 
-function BeamMesh({ inputs, results }: Props) {
+function BeamMesh({ inputs, results, onFit }: MeshProps) {
   const groupRef = useRef<THREE.Group>(null);
   useFrame((_, delta) => {
     if (groupRef.current) groupRef.current.rotation.y += delta * 0.3;
@@ -41,6 +43,9 @@ function BeamMesh({ inputs, results }: Props) {
 
   return (
     <group ref={groupRef}>
+      {/* Frame the full span (+ headroom for the labels) */}
+      <FitCamera sx={L} sy={H + 1.5} sz={isT ? BF : W} onFit={onFit} />
+
       {/* Concrete — one box for a rectangular beam, web + flange for a T */}
       {isT ? (
         <>
@@ -129,17 +134,24 @@ function BeamMesh({ inputs, results }: Props) {
 }
 
 export default function Beam3D(props: Props) {
+  // Zoom limits must follow the fitted distance — fixed clamps would drag the
+  // camera back in and re-crop the model. Stable callback + no-op guard so the
+  // fit can't feed back into a render loop.
+  const [dist, setDist] = useState(20);
+  const handleFit = useCallback(
+    (d: number) => setDist(prev => (Math.abs(prev - d) < 0.01 ? prev : d)), []);
+
   return (
     <div className="w-full rounded-xl overflow-hidden bg-gradient-to-b from-slate-800 to-slate-900 shadow-lg ring-1 ring-slate-700/50" style={{ height: 320 }}>
-      <Canvas shadows camera={{ position: [8, 4, 8], fov: 45 }} gl={{ preserveDrawingBuffer: true }}>
+      <Canvas shadows camera={{ fov: 45 }} gl={{ preserveDrawingBuffer: true }}>
         <ambientLight intensity={0.5} />
         <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
         <pointLight position={[-5, 5, -5]} intensity={0.5} />
         <Suspense fallback={null}>
-          <BeamMesh {...props} />
+          <BeamMesh {...props} onFit={handleFit} />
           <Environment preset="city" />
         </Suspense>
-        <OrbitControls enablePan={false} minDistance={4} maxDistance={20} autoRotate autoRotateSpeed={1} />
+        <OrbitControls enablePan={false} minDistance={dist * 0.35} maxDistance={dist * 2.5} autoRotate autoRotateSpeed={1} />
       </Canvas>
       <p className="text-center text-xs text-slate-400 py-1.5 bg-slate-900">Drag to orbit · Scroll to zoom</p>
     </div>
