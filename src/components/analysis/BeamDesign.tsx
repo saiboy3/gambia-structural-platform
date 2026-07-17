@@ -11,6 +11,8 @@ import UtilisationBars from '../visuals/UtilisationBars';
 import type { UtilCheck } from '../visuals/UtilisationBars';
 import OptimiseSuggestion from '../ui/OptimiseSuggestion';
 import CalcSheet from '../ui/CalcSheet';
+import ReportButton from '../report/ReportButton';
+import { buildBeamReport } from '../../utils/reportBuilders';
 import SaveDesignPanel from '../ui/SaveDesignPanel';
 import ProjectSelector from '../projects/ProjectSelector';
 import GuidedBeam from '../wizard/GuidedBeam';
@@ -407,6 +409,11 @@ export default function BeamDesign() {
                 <ResultRow label="fyd" value={inp.material.fyd.toFixed(1)} unit="MPa" />
 
                 <CalcSheet title="Beam Calculation Sheet" codeLabel={factors.label} steps={beamCalcNotes(inp, res, factors)} />
+
+                <div className="mt-3 flex justify-end">
+                  <ReportButton data={buildBeamReport(inp, res, factors)} />
+                </div>
+
                 <SaveDesignPanel memberType="beam"
                   inputs={inp as unknown as Record<string, unknown>}
                   results={res as unknown as Record<string, unknown>} />
