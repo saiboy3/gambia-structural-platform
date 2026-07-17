@@ -48,6 +48,7 @@ export default function ReportButton({ data, projectId, threeD }: Props) {
   const [meta, setMeta]         = useState<ReportMeta>(DEFAULT_META);
   const [image3d, setImage3d]   = useState<string | null>(null);
   const [pending, setPending]   = useState(false);
+  const [capturing, setCapturing] = useState(false);
   const holderRef               = useRef<HTMLDivElement>(null);
 
   const { projects } = useProject();
@@ -82,14 +83,48 @@ export default function ReportButton({ data, projectId, threeD }: Props) {
 
   // Grab the 3D view as a PNG, then hand off to the effect below. Printing here
   // would race the state update and omit the image from the document.
+  //
+  // The off-screen WebGL canvas is cold when the section is first ticked, and a
+  // frozen (still) scene with an environment map + shadows takes several frames
+  // to reach a fully populated image. A fixed delay captured a near-blank frame,
+  // so instead poll until the PNG size stabilises (two reads within 2%), with a
+  // hard ceiling so a stuck GPU can't hang the dialog.
   const generate = () => {
-    if (sections.threeD && threeD) {
-      const canvas = holderRef.current?.querySelector('canvas');
-      setImage3d(canvas ? canvas.toDataURL('image/png') : null);
-    } else {
+    if (!(sections.threeD && threeD)) {
       setImage3d(null);
+      setPending(true);
+      return;
     }
-    setPending(true);
+
+    setCapturing(true);
+    const start = performance.now();
+    let last = 0;
+    let stable = 0;
+
+    const tick = () => {
+      const canvas = holderRef.current?.querySelector('canvas');
+      const url = canvas ? canvas.toDataURL('image/png') : '';
+      const size = url.length;
+      const elapsed = performance.now() - start;
+
+      // Settled: a populated frame that stopped growing. The floor (5 KB) only
+      // rejects the near-empty buffer-clear frame (~2 KB); a real render — even
+      // a thin column that is mostly dark background — is well above it, while
+      // a stirrup-dense beam is far larger, so an absolute upper gate would
+      // wrongly reject the column. Stability is the real signal.
+      const settled = size > 5_000 && last > 0 && Math.abs(size - last) / size < 0.02;
+      stable = settled ? stable + 1 : 0;
+      last = size;
+
+      if (stable >= 2 || elapsed > 4000) {
+        setImage3d(size > 5_000 ? url : null);
+        setCapturing(false);
+        setPending(true);
+        return;
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
   };
 
   // Print once React has committed the captured image into the document.
@@ -222,7 +257,10 @@ export default function ReportButton({ data, projectId, threeD }: Props) {
             {/* Footer */}
             <div className="flex items-center justify-end gap-2 border-t border-slate-200 px-5 py-3">
               <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button size="sm" icon={<Printer size={13} />} onClick={generate}>Generate PDF</Button>
+              <Button size="sm" icon={<Printer size={13} />} onClick={generate}
+                disabled={capturing || pending}>
+                {capturing ? 'Preparing…' : 'Generate PDF'}
+              </Button>
             </div>
           </div>
 
