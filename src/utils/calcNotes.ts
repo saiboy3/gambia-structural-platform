@@ -378,14 +378,14 @@ export function slabCalcNotes(
       formula: inp.type === 'two-way'
         ? 'MEd,x = αsx · wEd · lx²'
         : `MEd,x = wEd · lx² / ${inp.edgeCondition === 'cantilever' ? 2 : inp.edgeCondition === 'continuous-all' ? 10 : 8}`,
-      working: `= ${n(Med_x / (wd * lx * lx), 3)} × ${n(wd)} × ${lx}²`,
+      working: `= ${n(wd > 0 ? Med_x / (wd * lx * lx) : 0, 3)} × ${n(wd)} × ${lx}²`,
       result: `${n(Med_x)} kNm/m`,
       ref: r(code, inp.type === 'two-way' ? 'BS 8110 Table 3.14 (per EC2 §5.3.1)' : 'EC2 §5.4', 'BS8110 §3.5.3 Table 3.14', 'ACI 318 §8.5', 'ACI 318 §8.5'),
     },
     {
       label: 'Long-span design moment',
       formula: 'MEd,y = αsy · wEd · lx²',
-      working: `= ${n(Med_y / (wd * lx * lx), 3)} × ${n(wd)} × ${lx}²`,
+      working: `= ${n(wd > 0 ? Med_y / (wd * lx * lx) : 0, 3)} × ${n(wd)} × ${lx}²`,
       result: `${n(Med_y)} kNm/m`,
       ref: r(code, 'BS 8110 Table 3.14 (per EC2 §5.3.1)', 'BS8110 §3.5.3 Table 3.14', 'ACI 318 §8.5', 'ACI 318 §8.5'),
     },

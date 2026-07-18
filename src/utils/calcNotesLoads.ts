@@ -180,7 +180,7 @@ export function loadCombinationsCalcNotes(
       label: 'ULS / SLS ratio',
       formula: 'ratio = ULSmax / SLSmax',
       working: `= ${n(ulsMax)} / ${n(slsMax)}`,
-      result: `${n(ulsMax / slsMax)}`,
+      result: `${slsMax > 0 ? n(ulsMax / slsMax) : '—'}`,
       ref: '',
     },
     {
@@ -197,7 +197,11 @@ export function loadCombinationsCalcNotes(
 
 // ── WIND CALCULATOR calc notes ─────────────────────────────────────────────────
 export function windCalcNotes(inp: WindInputs, res: WindResults): CalcStep[] {
-  const hd = inp.height / inp.depth;
+  // Match the engine's guard (0/0 → 0) and additionally clamp the depth = 0
+  // case so the sheet shows a finite ratio instead of "Infinity". 999 keeps
+  // the same cpe branch (h/d ≥ 1) the engine's Infinity would select.
+  const hdRaw = inp.height / inp.depth;
+  const hd = Number.isNaN(hdRaw) ? 0 : (Number.isFinite(hdRaw) ? hdRaw : 999);
   const Aref = inp.height * inp.breadth;
   const cf_ = res.cpe_wall - res.cpe_lee;
 
