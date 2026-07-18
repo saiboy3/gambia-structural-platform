@@ -254,6 +254,14 @@ button.bg-white.shadow.text-blue-700 {
 .rep-cover-table td { padding: 1.6mm 2mm; }
 
 /* ── Headings ── */
+/* Orphan control: keep a heading (and the lead paragraph under it) with the
+   content it introduces, so removing the forced page breaks can't strand a
+   section title alone at the foot of a page. Also reduce the top margin's
+   effect at a page top so a section starting a fresh page doesn't push down. */
+.rep-h2, .rep-h3, .rep-lead {
+  break-after: avoid;
+  page-break-after: avoid;
+}
 .rep-h2 {
   display: flex;
   align-items: baseline;

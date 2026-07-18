@@ -241,8 +241,11 @@ export default function PrintReport({
       )}
 
       {/* ── Calculations ── */}
+      {/* No forced page break: the section flows on from the checks so the page
+          fills densely. Heading orphan-control (break-after: avoid on the title
+          and lead) keeps the heading with the table it introduces. */}
       {sections.calcs && (data.calcSteps?.length ?? 0) > 0 && (
-        <section className="rep-break">
+        <section>
           <SectionTitle n={num()}>Detailed Calculations</SectionTitle>
           <p className="rep-lead">
             Each step below shows the expression used, the substituted values and the resulting
@@ -258,7 +261,7 @@ export default function PrintReport({
         const show3d = sections.threeD && !!image3d;
         if (figs.length === 0 && !show3d) return null;
         return (
-          <section className="rep-break">
+          <section>
             <SectionTitle n={num()}>Diagrams</SectionTitle>
             {figs.map((v, i) => (
               <figure key={i} className="rep-fig rep-avoid">
